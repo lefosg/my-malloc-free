@@ -6,6 +6,7 @@
 	- write some tests (+ test speed?)
 	- if size
 	- multithreaded malloc?
+	- provide some tolerance on splitting (maybe not worth it to split for small amount of memory)
 	
 	
 2. implement with explicit free list

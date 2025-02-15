@@ -45,12 +45,13 @@ void free(void* ptr);
 header_t* first_fit_search(size_t size);
 
 /**
- * Takes a metadata header, and places is inside the linked list. Implicit list 
- * nodes must be contigous (i.e., no back n forth, "left to right and right to left pointers").
- * @paragraph header of new block to be allocated
- * @returns void
+ * Checks if a block to be allocated is too big, and the request only needs a small
+ * portion of it. If that is the case, split the big block into two.
+ * @param prev pointer to the header of block to be allocated
+ * @param size how much size is requested (the "small" portion)
+ * @returns void - the linked list is 
 */
-void append_to_list(header_t* header);
+void split_block(header_t* prev, size_t size);
 
 /**
  * Takes the pointer in question, and returns a pointer to its correspondent header

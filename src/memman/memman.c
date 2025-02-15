@@ -18,7 +18,8 @@ void* allocate(size_t size) {
     header = first_fit_search(size);
     if (header) {
         header->is_free = 0;
-        //header->size = size;  //external fragmentation/splitting occurs here
+        //check if needed to split the block
+        split_block(header, size);
         return (void*)(header+1);
     }
     
@@ -47,6 +48,33 @@ void* allocate(size_t size) {
 
 }
 
+void split_block(header_t* prev, size_t size) {
+    //even when splitting, check if new header+some bytes fit
+    //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
+    printf("%d\n",prev->size);
+    printf("%d\n",size);
+    printf("%d\n",header_size);
+    if ((long)(prev->size - size - header_size) <= 0) {
+        printf("aborting split block\n");
+        return;
+    }
+
+    header_t* newblk;
+    char* tmp = (char*)prev;  
+    //now we have a pointer looking at the addr of the prev block
+    //some math: tmp = tmp + header_size(aka skip the hdr) + prev.size (go right after the small block)
+    tmp = tmp + header_size + size;
+    newblk = (header_t*)tmp;
+
+    newblk->next = prev->next;
+    newblk->is_free = 1;
+    newblk->size = prev->size - size - header_size;
+    
+
+    prev->next=newblk;
+    prev->size=size;
+}
+
 header_t* first_fit_search(size_t size) {
 
     if (size == 0)  //could skip this check??
@@ -71,11 +99,11 @@ void print_heap() {
     }
 }
 
-header_t* get_header_of_ptr(void* ptr) {
+inline header_t* get_header_of_ptr(void* ptr) {
     return (header_t*)ptr - 1;
 }
 
-void print_header_info(header_t* header) {
+inline void print_header_info(header_t* header) {
     printf("Pointer: %p\n", header);
     printf("Is Free: %u\n", header->is_free);
     printf("Size: %ld\n", header->size);
