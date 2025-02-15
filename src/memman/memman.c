@@ -54,7 +54,8 @@ void split_block(header_t* prev, size_t size) {
     printf("%d\n",prev->size);
     printf("%d\n",size);
     printf("%d\n",header_size);
-    if ((long)(prev->size - size - header_size) <= 0) {
+    long tolerance = prev->size * SPLIT_TOL;
+    if ((long)(prev->size - size - header_size) <= tolerance) {
         printf("aborting split block\n");
         return;
     }

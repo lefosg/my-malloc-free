@@ -1,6 +1,8 @@
 #include <unistd.h>  // for using sbrk, size_t, NULL
 #include <stdio.h>  //for some prints
 
+#define SPLIT_TOL 0.4
+
 typedef struct header header_t;
 
 /**
