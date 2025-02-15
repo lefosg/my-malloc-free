@@ -18,7 +18,7 @@ void* allocate(size_t size) {
     header = first_fit_search(size);
     if (header) {
         header->is_free = 0;
-        header->size = size;  //external fragmentation/splitting occurs here
+        //header->size = size;  //external fragmentation/splitting occurs here
         return (void*)(header+1);
     }
     
@@ -55,7 +55,6 @@ header_t* first_fit_search(size_t size) {
     header_t *curr = heap_head;
     while (curr) {
         if (curr->size >= size && curr->is_free == 1) {
-            printf("\n%p\n",curr);
             return curr;
         }
         curr = curr->next;
