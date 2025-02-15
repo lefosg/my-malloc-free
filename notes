@@ -1,0 +1,24 @@
+1. implement with implicit free list
+	- first, next, best match
+	- coalesce on free (maybe deferred)
+	- 16 byte alignment
+	- header masks last 3 bytes. lsb is is_free, lsb-1 is is_prev_allocated
+	- write some tests (+ test speed?)
+	- if size
+	- multithreaded malloc?
+	
+	
+2. implement with explicit free list
+	- when a block is free, in the header include prev and next pointers
+	- implement with lifo first thing (consider all 4 cases)
+
+
+MEMORY PITFALLS (https://scs.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=3efacbed-aa6d-4d18-b354-24cdc453e1e8)
+1. Assume heap memory is initialized to 0
+2. Allocate the wrong size + overflowing
+3. Pointer arithmetic
+4. Forgetting local variables disappear after function returns
+5. Freeing an already freed block (!!)
+6. Referencing already freed blocks (!!!!!!!)
+7. Not freeing an allocated block before function returns (garbage stays there forever)
+8. Partially freeing data structures (e.g., clear only the head of a linked list)
