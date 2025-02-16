@@ -1,5 +1,6 @@
 #include <unistd.h>  // for using sbrk, size_t, NULL
 #include <stdio.h>  //for some prints
+#include <pthread.h>
 
 #define SPLIT_TOL 0.4
 
@@ -18,14 +19,12 @@ struct header {
 
 // ================= API =================
 
-
 /**
  * Allocates a number of bytes in a heap and returns a void pointer to that address
  * @param size bytes of memory in the heap
  * @returns a void pointer to the address
 */
 void* allocate(size_t size);
-
 
 /**
  * Frees up the memory from the heap by specifing the pointer to that address
@@ -54,6 +53,16 @@ header_t* first_fit_search(size_t size);
  * @returns void - the linked list is 
 */
 void split_block(header_t* prev, size_t size);
+
+/**
+ * Called by free. It checks if the next header is an empty block. If it is,
+ * it coalesces (merges) the two blocks into one
+ * @param header pointer to the current header (trying to coalesce with the next)
+ * @returns a pointer to the new header. If coalesced, header should be different. If not coalesced,
+ * it returns the initial header.
+*/
+header_t* coalesce_successor(header_t* header);
+
 
 /**
  * Takes the pointer in question, and returns a pointer to its correspondent header
