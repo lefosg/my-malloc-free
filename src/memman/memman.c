@@ -74,11 +74,20 @@ header_t* coalesce_successor(header_t* header) {
      * If a previous search has been done, keep pass in the prev pointer as param as well
      * Double link the list
      */
+    
     if (header->next && header->next->is_free) {
         header->next->is_free = 0;
         header->size = header->size + header->next->size + header_size;
         header->next = header->next->next;
-        header->next->next = NULL;
+        print_header_info(header);
+        if (header != heap_head) {
+            if (header->next != heap_tail) {
+                heap_tail = header;
+                header->next=NULL;
+            } else {
+                header->next->next = NULL;
+            }
+        }
     }
 }
 
@@ -123,11 +132,13 @@ header_t* first_fit_search(size_t size) {
 
 
 void print_heap() {
+    printf("\n====== PRINT HEAP START ======\n");
     for (header_t* header = heap_head; header != NULL; header = header->next) {
-        printf("Pointer: %p\n", header);
+        printf("Header address: %p\n", header);
         printf("Is Free: %u\n", header->is_free);
         printf("Size: %ld\n", header->size);
     }
+    printf("====== PRINT HEAP END ======\n");
 }
 
 inline header_t* get_header_of_ptr(void* ptr) {
@@ -135,7 +146,9 @@ inline header_t* get_header_of_ptr(void* ptr) {
 }
 
 void print_header_info(header_t* header) {
+    printf("\n====== PRINT HEADER INFO START ======\n");
     printf("Pointer: %p\n", header);
     printf("Is Free: %u\n", header->is_free);
     printf("Size: %ld\n", header->size);
+    printf("====== PRINT HEADER INFO END ======\n");
 }

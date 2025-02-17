@@ -1,4 +1,5 @@
-#!/bin/sh
 make
-./build/main
-echo
+if [ $? -eq 0 ]; then
+  ./build/main
+  echo
+fi
