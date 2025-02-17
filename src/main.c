@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+// #include <stdlib.h>
 #include "memman/memman.h"
 
 
@@ -60,27 +62,14 @@ int main(int argc, char* argv[]) {
     free(p6);
     free(p8);
 
-
     print_heap();
     printf("\n");
+
+    allocate(0xffffffffffffffff);
+
+    free(0x0);
+
     
-    // free(p19);
-    // print_heap();
-    // printf("\n");
-
-    // free(p2);
-    // print_heap();
-    // printf("\n");
-
-    // free(p1);
-    // print_heap();
-    // printf("\n");
-
     return 0;
 }
-
-
-
-
-
 

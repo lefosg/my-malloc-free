@@ -6,12 +6,10 @@ pthread_mutex_t global_alloc_lock;
 
 
 void* allocate(size_t size) {
-
-    if (size == 0)
+    if (size == 0 || size >= __PTRDIFF_MAX__) {
+        errno = ENOMEM;
         return NULL;
-
-    size_t total_size;
-    total_size = header_size + size;
+    }
 
     //check if heap already has some gap of requested size
     header_t* header;
@@ -26,13 +24,20 @@ void* allocate(size_t size) {
     }
     
     //else extend the heap
-    void* ptr = sbrk(total_size);
+    void* ptr = extend_heap(size);
+	pthread_mutex_unlock(&global_alloc_lock);
+    return ptr;
+}
+
+void* extend_heap(size_t size) {
+    void* ptr = sbrk(size+header_size);
     if (ptr == (void*)-1) {
+        errno = ENOMEM;
 		pthread_mutex_unlock(&global_alloc_lock);
         return NULL;
     }
 
-    header = (header_t*)ptr;
+    header_t* header = (header_t*)ptr;
     header->size=size;
     header->is_free=0;
     header->next=NULL;
@@ -48,15 +53,18 @@ void* allocate(size_t size) {
     }
     //new tail is this header after extending
     heap_tail = header;
-	pthread_mutex_unlock(&global_alloc_lock);
     return ptr;
-
 }
 
-
 void free(void* ptr) {
+    if (!ptr)
+        return;
+        
     pthread_mutex_lock(&global_alloc_lock);
     // is this pointer valid?
+    if (ptr < (void*)heap_head || ptr > (void*)heap_tail){
+        return;
+    }
     // was it malloc'd?
 
 
@@ -70,13 +78,8 @@ void free(void* ptr) {
 	pthread_mutex_unlock(&global_alloc_lock);
 }
 
-header_t* coalesce_successor(header_t* header) {
-    /** Some thoughts: need to coalesce with prev and next neighbours? Easy to find next. Options for previous:
-     * Search from the start -> slow
-     * If a previous search has been done, keep pass in the prev pointer as param as well
-     * Double link the list
-     */
-    
+void coalesce_successor(header_t* header) {
+    //merge with next block    
     if (header->next && header->next->is_free) {
         header->next->is_free = 0;
         header->size = header->size + header->next->size + header_size;
@@ -92,7 +95,6 @@ header_t* coalesce_successor(header_t* header) {
     header_t* prev = search_prev_header(header);
     if (prev && prev->is_free)
         coalesce_successor(prev);
-
 }
 
 header_t* search_prev_header(header_t* header) {

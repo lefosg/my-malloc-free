@@ -1,6 +1,7 @@
 #include <unistd.h>  // for using sbrk, size_t, NULL
 #include <stdio.h>  //for some prints
 #include <pthread.h>
+#include <errno.h>
 
 #define SPLIT_TOL 0.4
 
@@ -37,6 +38,13 @@ void free(void* ptr);
 // ================= HELPER FUNCTIONS =================
 
 /**
+ * Extends the heap by size bytes requested, plus the header size.
+ * @param size requested
+ * @returns a void pointer to an address on the heap 
+ */
+void* extend_heap(size_t size);
+
+/**
  * Searches the heap for available space using first fit algorithm
  * @param size number of bytes requested
  * @returns A header pointer to the available block if found.
@@ -60,8 +68,13 @@ void split_block(header_t* prev, size_t size);
  * @param header pointer to the current header (trying to coalesce with the next)
  * @returns a pointer to the new header. If coalesced, header should be different. If not coalesced,
  * it returns the initial header.
+ * 
+ * Some thoughts: need to coalesce with prev and next neighbours? Easy to find next. Options for previous:
+ * Search from the start -> slow (Currently implemented!)
+ * If a previous search has been done, keep pass in the prev pointer as param as well
+ * Double link the list
 */
-header_t* coalesce_successor(header_t* header);
+void coalesce_successor(header_t* header);
 
 /**
  * Returns the previous block header. Serial search from head to given one.
