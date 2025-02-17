@@ -80,7 +80,7 @@ header_t* get_header_of_ptr(void* ptr);
 /**
  * Prints the current heap (pointer address, size of block, and availability aka free or not)
 */
-void print_heap();
+void print_heap(void);
 
 /**
  * Prints the info of a given header (pointer address, size of block, and availability aka free or not)

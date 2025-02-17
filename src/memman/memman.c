@@ -55,6 +55,7 @@ void* allocate(size_t size) {
 
 
 void free(void* ptr) {
+    pthread_mutex_lock(&global_alloc_lock);
     // is this pointer valid?
     // was it malloc'd?
 
@@ -66,6 +67,7 @@ void free(void* ptr) {
     //if needed, coalesce
     coalesce_successor(tmp);
 
+	pthread_mutex_unlock(&global_alloc_lock);
 }
 
 header_t* coalesce_successor(header_t* header) {
@@ -78,15 +80,13 @@ header_t* coalesce_successor(header_t* header) {
     if (header->next && header->next->is_free) {
         header->next->is_free = 0;
         header->size = header->size + header->next->size + header_size;
-        header->next = header->next->next;
-        if (header != heap_head) {
-            if (header->next != heap_tail) {
-                heap_tail = header;
-                header->next=NULL;
-            } else {
-                header->next->next = NULL;
-            }
+        if (header->next == heap_tail) {
+            heap_tail = header;
+            header->next=NULL;
+        } else {
+            header->next = header->next->next;
         }
+        
     }
     //check if can coalesce with previous
     header_t* prev = search_prev_header(header);
@@ -144,13 +144,16 @@ header_t* first_fit_search(size_t size) {
 }
 
 
-void print_heap() {
+void print_heap(void) {
     printf("\n====== PRINT HEAP START ======\n");
+    int heap_len=0;
     for (header_t* header = heap_head; header != NULL; header = header->next) {
         printf("Header address: %p\n", header);
         printf("Is Free: %u\n", header->is_free);
         printf("Size: %ld\n", header->size);
+        heap_len++;
     }
+    printf("No. headers: %d\n", heap_len);
     printf("====== PRINT HEAP END ======\n");
 }
 
