@@ -79,7 +79,6 @@ header_t* coalesce_successor(header_t* header) {
         header->next->is_free = 0;
         header->size = header->size + header->next->size + header_size;
         header->next = header->next->next;
-        print_header_info(header);
         if (header != heap_head) {
             if (header->next != heap_tail) {
                 heap_tail = header;
@@ -89,8 +88,22 @@ header_t* coalesce_successor(header_t* header) {
             }
         }
     }
+    //check if can coalesce with previous
+    header_t* prev = search_prev_header(header);
+    if (prev && prev->is_free)
+        coalesce_successor(prev);
+
 }
 
+header_t* search_prev_header(header_t* header) {
+    if (header == heap_head || header == NULL)
+        return NULL;
+    for (header_t* curr = heap_head; curr != NULL; curr = curr->next) {
+        if (curr->next == header)
+            return curr;
+    }
+    return NULL;
+}
 
 void split_block(header_t* prev, size_t size) {
     //even when splitting, check if new header+some bytes fit

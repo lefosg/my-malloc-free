@@ -63,6 +63,12 @@ void split_block(header_t* prev, size_t size);
 */
 header_t* coalesce_successor(header_t* header);
 
+/**
+ * Returns the previous block header. Serial search from head to given one.
+ * @param header current header
+ * @returns previous header. If given header is NULL or the heap_head, returns NULL.
+ */
+header_t* search_prev_header(header_t* header);
 
 /**
  * Takes the pointer in question, and returns a pointer to its correspondent header

@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     print_heap();
     printf("\n");
 
-    free(p5);
+    free(p2);
     free(p4);
 
     print_heap();
@@ -31,16 +31,13 @@ int main(int argc, char* argv[]) {
     print_heap();
     printf("\n");
 
-    free(p2);
-    print_heap();
-    printf("\n");
+    // free(p2);
+    // print_heap();
+    // printf("\n");
 
-    free(p1);
-    print_heap();
-    printf("\n");
-
-    
-    
+    // free(p1);
+    // print_heap();
+    // printf("\n");
 
     return 0;
 }
