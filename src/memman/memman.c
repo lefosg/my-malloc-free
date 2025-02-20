@@ -3,7 +3,7 @@
 header_t *heap_head, *heap_tail;
 size_t header_size = sizeof(header_t); 
 pthread_mutex_t global_alloc_lock;
-header_t* last_search_header=NULL;
+
 
 // ================= ALLOCATE =================
 
@@ -21,7 +21,7 @@ void* allocate(size_t size) {
         size = ALIGN_SIZE * (int)((size + (ALIGN_SIZE-1)) / ALIGN_SIZE);
 	pthread_mutex_lock(&global_alloc_lock);
     // header = first_fit_search(size);
-    header = next_fit_search(size);
+    header = best_fit_search(size);
 
     if (header) {
         // header->is_free = 0;
@@ -66,43 +66,24 @@ void* extend_heap(size_t size) {
     return ptr;
 }
 
-header_t* next_fit_search(size_t size) {
-    if (size == 0)
-        return NULL;
-    if (!last_search_header)  //if first search, do first fit
-        return first_fit_search(size);
-    
-    //search from last header returned until end of heap
-    header_t *curr;
-    for (curr=last_search_header; curr!=NULL; curr=curr->next) {
-        if (get_block_size(curr) >= size && block_is_free(curr)) {
-            last_search_header = curr;
-            return curr;
-        }
-    }
-    //if next fit did not find anything after last_search_header, search from start up to last_search_header
-    for (curr=heap_head; curr!=last_search_header; curr=curr->next) {
-        if (get_block_size(curr) >= size && block_is_free(curr)) {
-            last_search_header = curr;
-            return curr;
-        }
-    }
-    return NULL;
-}
 
-header_t* first_fit_search(size_t size) {
+header_t* best_fit_search(size_t size) {
     if (size == 0)  //could skip this check??
         return NULL;
     
-    header_t *curr = heap_head;
+    header_t* curr = heap_head;
+    header_t* min_h;
+    size_t min_size = __PTRDIFF_MAX__;
     while (curr) {
-        if (get_block_size(curr) >= size && block_is_free(curr)) {  //curr->size >= size && curr->is_free == 1
-            last_search_header = curr;
-            return curr;
+        if (get_block_size(curr) >= size && block_is_free(curr) 
+            && get_block_size(curr) <= min_size) {  //best fit condition 
+            min_h = curr;
+            min_size = get_block_size(curr);
+            print_header_info(min_h);
         }
         curr = curr->next;
     }
-    return NULL;
+    return min_size == __PTRDIFF_MAX__ ? NULL : min_h;
 }
 
 header_t* search_prev_header(header_t* header) {

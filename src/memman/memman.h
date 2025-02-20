@@ -46,20 +46,14 @@ void free(void* ptr);
 void* extend_heap(size_t size);
 
 /**
- * Searches the heap for available space using first fit algorithm
+ * Searches the heap for available space using best fit algorithm.
+ * Finds the smallest possible block that can contain the size requested
  * @param size number of bytes requested
  * @returns A header pointer to the available block if found.
  * @returns (void*)-1 if size is 0. 
  * @returns NULL if no free space was found
 */
-header_t* first_fit_search(size_t size);
-
-/**
- * Searches the heap for available space using next fit algorithm
- * @param size to look for
- * @returns header to the block found
- */
-header_t* next_fit_search(size_t size);
+header_t* best_fit_search(size_t size);
 
 /**
  * Checks if a block to be allocated is too big, and the request only needs a small

@@ -8,14 +8,11 @@
 int main(int argc, char* argv[]) {
 
     void* p1 = allocate(400);
-    void* lol3= allocate(1);
     void* p2 = allocate(100);
-    void* lol = allocate(1);
     void* p3 = allocate(500);
-    void* lol2 = allocate(1);
-    void* p4 = allocate(100);
+    void* p4 = allocate(300);
     void* p5 = allocate(200);
-    void* p6 = allocate(100);
+    void* p6 = allocate(50);
     void* p7 = allocate(2000);
     // void* p8 = allocate(3000);
     // void* p9 = allocate(4000);
@@ -34,39 +31,22 @@ int main(int argc, char* argv[]) {
     print_heap();
     printf("\n");
 
-    
     free(p2);
-    free(p3);
     free(p4);
-    // free(p5);
+    free(p6);
 
-    //400 1 100 1 500 1 100 200 100 2000
-
-    print_heap();
-    printf("\n");
-    void* a = allocate(500);
-    print_heap();
-    printf("\n");
-    void* b = allocate(100);
-    print_heap();
-    printf("\n");
-    free(p1);
-    void* c = allocate(200);
-    print_heap();
-    printf("\n");
-    void* d = allocate(100);
-    print_heap();
-    printf("\n");
-    void* e = allocate(10000);
-    print_heap();
-    printf("\n");
-    free(e);
-    allocate(4000);
+    //400 100 500 300 200 50 2000
+    
     print_heap();
     printf("\n");
     
+    void* a = allocate(40);
+    void* b = allocate(250);
 
-    
+    print_heap();
+    printf("\n");
+
+
     return 0;
 }
 
