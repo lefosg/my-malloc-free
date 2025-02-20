@@ -55,6 +55,13 @@ void* extend_heap(size_t size);
 header_t* first_fit_search(size_t size);
 
 /**
+ * Searches the heap for available space using next fit algorithm
+ * @param size to look for
+ * @returns header to the block found
+ */
+header_t* next_fit_search(size_t size);
+
+/**
  * Checks if a block to be allocated is too big, and the request only needs a small
  * portion of it. If that is the case, split the big block into two.
  * @param prev pointer to the header of block to be allocated
@@ -123,6 +130,8 @@ void mark_block_occupied(header_t* header);
 size_t get_block_size(header_t* size);
 
 /**
- * Returns 1 if the block is free, else returns 0;
+ * Checks if the block is free by looking at the last bit of the header.size field
+ * @param header to check if free
+ * @returns 1 if the block is free, else returns 0;
  */
 int block_is_free(header_t* header);
