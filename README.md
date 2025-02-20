@@ -2,7 +2,7 @@
 
 Description:
 
-Implementation of my own allocate and free functions for C. Uses ``sbrk`` function. Current implementation uses implicit list and first fit algorithm.
+Implementation of my own allocate and free functions for C. Uses ``sbrk`` function. Current implementation uses implicit list and next fit algorithm.
 
 The main.c file is just for testing the API. The library itself is in the src/memman folder (short for memory manager).
 
