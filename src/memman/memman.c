@@ -13,10 +13,15 @@ void* allocate(size_t size) {
 
     //check if heap already has some gap of requested size
     header_t* header;
+    if (size < ALIGN_SIZE)
+        size = ALIGN_SIZE;
+    else   
+        size = ALIGN_SIZE * (int)((size + (ALIGN_SIZE-1)) / ALIGN_SIZE);
 	pthread_mutex_lock(&global_alloc_lock);
     header = first_fit_search(size);
     if (header) {
-        header->is_free = 0;
+        // header->is_free = 0;
+        mark_block_occupied(header);
         //check if needed to split the block
         split_block(header, size);
 		pthread_mutex_unlock(&global_alloc_lock);
@@ -39,7 +44,8 @@ void* extend_heap(size_t size) {
 
     header_t* header = (header_t*)ptr;
     header->size=size;
-    header->is_free=0;
+    // header->is_free=0;
+    mark_block_occupied(header);
     header->next=NULL;
 
     ptr += header_size;
@@ -62,7 +68,11 @@ void free(void* ptr) {
         
     pthread_mutex_lock(&global_alloc_lock);
     // is this pointer valid?
-    if (ptr < (void*)heap_head || ptr > (void*)heap_tail){
+    if (ptr < (void*)heap_head || ptr > (void*)(heap_tail+1)){
+        printf("%p\n", heap_head);
+        printf("%p\n", ptr);
+        printf("%p\n", heap_tail);
+        printf("ASDADASDASD");
         return;
     }
     // was it malloc'd?
@@ -70,20 +80,24 @@ void free(void* ptr) {
 
     //if all checks ok, mark free
     header_t* tmp = get_header_of_ptr(ptr);
-    tmp->is_free = 1;
-
+    // tmp->is_free = 1;
+    
     //if needed, coalesce
+    mark_block_free(tmp);
     coalesce_successor(tmp);
+    // mark_block_free(tmp);
 
 	pthread_mutex_unlock(&global_alloc_lock);
 }
 
 void coalesce_successor(header_t* header) {
     //merge with next block    
-    if (header->next && header->next->is_free) {
-        header->next->is_free = 0;
-        header->size = header->size + header->next->size + header_size;
-        if (header->next == heap_tail) {
+    if (header->next && block_is_free(header->next)) { //&& header->next->is_free
+        // header->next->is_free = 0;
+        mark_block_occupied(header->next);
+        header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
+        mark_block_free(header);
+    if (header->next == heap_tail) {
             heap_tail = header;
             header->next=NULL;
         } else {
@@ -93,7 +107,7 @@ void coalesce_successor(header_t* header) {
     }
     //check if can coalesce with previous
     header_t* prev = search_prev_header(header);
-    if (prev && prev->is_free)
+    if (prev && block_is_free(prev))  // && prev->is_free
         coalesce_successor(prev);
 }
 
@@ -110,8 +124,8 @@ header_t* search_prev_header(header_t* header) {
 void split_block(header_t* prev, size_t size) {
     //even when splitting, check if new header+some bytes fit
     //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
-    long tolerance = prev->size * SPLIT_TOL;
-    if ((long)(prev->size - size - header_size) <= tolerance) {
+    long tolerance = get_block_size(prev) * SPLIT_TOL;  //prev->size * SPLIT_TOL
+    if ((long)(get_block_size(prev) - size - header_size) <= tolerance) { //prev->size - ...
         return;
     }
 
@@ -123,8 +137,9 @@ void split_block(header_t* prev, size_t size) {
     newblk = (header_t*)tmp;
 
     newblk->next = prev->next;
-    newblk->is_free = 1;
-    newblk->size = prev->size - size - header_size;
+    // newblk->is_free = 1;
+    newblk->size = get_block_size(prev) - size - header_size; ////prev->size
+    mark_block_free(newblk);
     
     prev->next=newblk;
     prev->size=size;
@@ -137,7 +152,7 @@ header_t* first_fit_search(size_t size) {
     
     header_t *curr = heap_head;
     while (curr) {
-        if (curr->size >= size && curr->is_free == 1) {
+        if (get_block_size(curr) >= size && block_is_free(curr)) {  //curr->size >= size && curr->is_free == 1
             return curr;
         }
         curr = curr->next;
@@ -151,8 +166,8 @@ void print_heap(void) {
     int heap_len=0;
     for (header_t* header = heap_head; header != NULL; header = header->next) {
         printf("Header address: %p\n", header);
-        printf("Is Free: %u\n", header->is_free);
-        printf("Size: %ld\n", header->size);
+        printf("Is Free: %u\n", block_is_free(header));
+        printf("Size: %ld\n", get_block_size(header));
         heap_len++;
     }
     printf("No. headers: %d\n", heap_len);
@@ -166,7 +181,23 @@ inline header_t* get_header_of_ptr(void* ptr) {
 void print_header_info(header_t* header) {
     printf("\n====== PRINT HEADER INFO START ======\n");
     printf("Pointer: %p\n", header);
-    printf("Is Free: %u\n", header->is_free);
-    printf("Size: %ld\n", header->size);
+    printf("Is Free: %u\n", block_is_free(header));
+    printf("Size: %ld\n", get_block_size(header));
     printf("====== PRINT HEADER INFO END ======\n");
+}
+
+inline size_t get_block_size(header_t* header) {
+    return header->size & ~((1<<1)-1);
+}
+
+inline void mark_block_free(header_t* header) {
+    header->size |= 0x01;
+}
+
+inline void mark_block_occupied(header_t* header) {
+    header->size &= ~1;
+}
+
+inline int block_is_free(header_t* header) {
+    return header->size & 1;  // Returns 1 if last bit is 1, 0 if last bit is 0
 }

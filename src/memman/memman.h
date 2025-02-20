@@ -4,6 +4,7 @@
 #include <errno.h>
 
 #define SPLIT_TOL 0.4
+#define ALIGN_SIZE 16
 
 typedef struct header header_t;
 
@@ -12,7 +13,7 @@ typedef struct header header_t;
 */
 struct header {
     size_t size;
-    int is_free;
+    // int is_free;
     struct header* next;
 };
 
@@ -100,3 +101,28 @@ void print_heap(void);
 */
 void print_header_info(header_t* header);
 
+/**
+ * Set the last bit of the size_t size property of a header to 1, meaning the block is free
+ * @param header header
+ */
+void mark_block_free(header_t* header);
+
+/**
+ * Set the last bit of the size_t size property of a header to 0, meaning the block is not free aka occupied
+ * @param header header
+ */
+void mark_block_occupied(header_t* header);
+
+/**
+ * Because the last bit of the size_t size property in the header has its last bit set to signal
+ * whether the block is free or not, we mask it out.
+ * We need to calculate the real size (due to 16-byte alignment we just cut off the last bit)
+ * @paragraph size of the block (with last bit set)
+ * @returns acutal size (same as size but sets last bit to zero)
+ */
+size_t get_block_size(header_t* size);
+
+/**
+ * Returns 1 if the block is free, else returns 0;
+ */
+int block_is_free(header_t* header);
