@@ -21,7 +21,7 @@ void* allocate(size_t size) {
     header = first_fit_search(size);
     if (header) {
         // header->is_free = 0;
-        mark_block_occupied(header);
+        mark_block_allocated(header);
         //check if needed to split the block
         split_block(header, size);
 		pthread_mutex_unlock(&global_alloc_lock);
@@ -45,7 +45,7 @@ void* extend_heap(size_t size) {
     header_t* header = (header_t*)ptr;
     header->size=size;
     // header->is_free=0;
-    mark_block_occupied(header);
+    mark_block_allocated(header);
     header->next=NULL;
 
     ptr += header_size;
@@ -94,7 +94,7 @@ void coalesce_successor(header_t* header) {
     //merge with next block    
     if (header->next && block_is_free(header->next)) { //&& header->next->is_free
         // header->next->is_free = 0;
-        mark_block_occupied(header->next);
+        mark_block_allocated(header->next);
         header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
         mark_block_free(header);
     if (header->next == heap_tail) {
@@ -194,10 +194,22 @@ inline void mark_block_free(header_t* header) {
     header->size |= 0x01;
 }
 
-inline void mark_block_occupied(header_t* header) {
+inline void mark_block_allocated(header_t* header) {
     header->size &= ~1;
 }
 
 inline int block_is_free(header_t* header) {
     return header->size & 1;  // Returns 1 if last bit is 1, 0 if last bit is 0
+}
+
+inline void update_prev_allocation_status(header_t* header) {
+
+}
+
+inline int prev_block_is_free(header_t* header) {
+
+}
+
+void place_footer(header_t* header) {
+
 }
