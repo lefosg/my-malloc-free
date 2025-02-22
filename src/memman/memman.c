@@ -231,12 +231,6 @@ inline int prev_block_is_free(header_t* header) {
 }
 
 void place_footer(header_t* header) {
-    printf("%p\n", header);
-    printf("%d\n", get_block_size(header));
-    printf("%d\n", header_size);
-    printf("%d\n", footer_size);
-    printf("%p\n", header + get_block_size(header) + header_size-footer_size);
-
     char* tmp = (char*)(header) + get_block_size(header) + header_size - footer_size;
     footer_t* footer = (footer_t*)tmp;
     footer->header = header;
