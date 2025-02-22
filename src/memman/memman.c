@@ -63,6 +63,8 @@ void* extend_heap(size_t size) {
     //when extending, old tail should point to current new header
     if (heap_tail) {
         heap_tail->next = header;
+        if (block_is_free(heap_tail))
+            set_prev_allocation_status_free(heap_tail);
     }
     //new tail is this header after extending
     heap_tail = header;
