@@ -118,7 +118,7 @@ void print_header_info(header_t* header);
 void mark_block_free(header_t* header);
 
 /**
- * Set the last bit of the size_t size property of a header to 0, meaning the block is not free aka occupied
+ * Set the last bit of the size_t size property of a header to 0, meaning the block is not free aka its allocated
  * @param header header
  */
 void mark_block_allocated(header_t* header);
@@ -143,13 +143,26 @@ int block_is_free(header_t* header);
 int prev_block_is_free(header_t* header);
 
 /**
- * Used to update the 'prev_free' bit of the next header. When a block is freed, this function
+ * Used to set the 'prev_free' bit to 1. When a block is freed, this function
  * is called to update the next header, that right now, its previous header was freed.
- * So, this function should be called like update_prev_allocation_status(header->NEXT)
  */
-void update_prev_allocation_status(header_t* header);
+void set_prev_allocation_status_free(header_t* header);
 
 /**
- * When a block is freed, we need to place a footer at the end
+ * Used to set the 'prev_free' bit to 0. When a block is freed, this function
+ * is called to update the next header, that right now, its previous header was freed.
+ */
+void set_prev_allocation_status_allocated(header_t* header);
+
+/**
+ * When a block is freed OR split, we need to place a footer at the end.
+ * @param header of the block, to which we want to place a footer
  */
 void place_footer(header_t* header);
+
+/**
+ * Gets the footer of the given header. Should only be called when coalescing
+ * @param header of the block
+ * @returns the footer
+ */
+footer_t* get_footer(header_t* header);

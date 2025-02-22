@@ -2,6 +2,7 @@
 
 header_t *heap_head, *heap_tail;
 size_t header_size = sizeof(header_t); 
+size_t footer_size = sizeof(footer_t);
 pthread_mutex_t global_alloc_lock;
 
 
@@ -67,26 +68,24 @@ void free(void* ptr) {
         return;
         
     pthread_mutex_lock(&global_alloc_lock);
-    // is this pointer valid?
+    // is this pointer valid? was it malloc'd?  
     if (ptr < (void*)heap_head || ptr > (void*)(heap_tail+1)){
-        printf("%p\n", heap_head);
-        printf("%p\n", ptr);
-        printf("%p\n", heap_tail);
-        printf("ASDADASDASD");
         return;
     }
-    // was it malloc'd?
-
 
     //if all checks ok, mark free
     header_t* tmp = get_header_of_ptr(ptr);
     // tmp->is_free = 1;
     
     //if needed, coalesce
+    
     mark_block_free(tmp);
+
+
     coalesce_successor(tmp);
     // mark_block_free(tmp);
-
+    place_footer(tmp);
+    set_prev_allocation_status_free(tmp);
 	pthread_mutex_unlock(&global_alloc_lock);
 }
 
@@ -97,18 +96,22 @@ void coalesce_successor(header_t* header) {
         mark_block_allocated(header->next);
         header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
         mark_block_free(header);
-    if (header->next == heap_tail) {
+        if (header->next == heap_tail) {
             heap_tail = header;
             header->next=NULL;
         } else {
             header->next = header->next->next;
         }
-        
     }
     //check if can coalesce with previous
-    header_t* prev = search_prev_header(header);
-    if (prev && block_is_free(prev))  // && prev->is_free
+    // header_t* prev = search_prev_header(header);
+    // if (prev && block_is_free(prev))  // && prev->is_free
+    //     coalesce_successor(prev);
+    // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce (MUCH faster)
+    if (prev_block_is_free(header)) {
+        header_t* prev = (((footer_t*)header)-1)->header;
         coalesce_successor(prev);
+    }    
 }
 
 header_t* search_prev_header(header_t* header) {
@@ -126,6 +129,7 @@ void split_block(header_t* prev, size_t size) {
     //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
     long tolerance = get_block_size(prev) * SPLIT_TOL;  //prev->size * SPLIT_TOL
     if ((long)(get_block_size(prev) - size - header_size) <= tolerance) { //prev->size - ...
+        set_prev_allocation_status_allocated(prev);
         return;
     }
 
@@ -136,13 +140,17 @@ void split_block(header_t* prev, size_t size) {
     tmp = tmp + header_size + size;
     newblk = (header_t*)tmp;
 
+
     newblk->next = prev->next;
     // newblk->is_free = 1;
-    newblk->size = get_block_size(prev) - size - header_size; ////prev->size
+    newblk->size = get_block_size(prev) - size - header_size; //prev->size
     mark_block_free(newblk);
     
     prev->next=newblk;
     prev->size=size;
+
+    set_prev_allocation_status_free(newblk);
+    place_footer(newblk);
 }
 
 header_t* first_fit_search(size_t size) {
@@ -167,6 +175,7 @@ void print_heap(void) {
     for (header_t* header = heap_head; header != NULL; header = header->next) {
         printf("Header address: %p\n", header);
         printf("Is Free: %u\n", block_is_free(header));
+        printf("Is Prev Free Bit: %u\n", prev_block_is_free(header));
         printf("Size: %ld\n", get_block_size(header));
         heap_len++;
     }
@@ -181,17 +190,19 @@ inline header_t* get_header_of_ptr(void* ptr) {
 void print_header_info(header_t* header) {
     printf("\n====== PRINT HEADER INFO START ======\n");
     printf("Pointer: %p\n", header);
-    printf("Is Free: %u\n", block_is_free(header));
+    printf("Is Free Bit: %u\n", block_is_free(header));
+    printf("Is Prev Free Bit: %u\n", prev_block_is_free(header));
     printf("Size: %ld\n", get_block_size(header));
     printf("====== PRINT HEADER INFO END ======\n");
 }
 
 inline size_t get_block_size(header_t* header) {
-    return header->size & ~((1<<1)-1);
+    // return header->size & ~((1<<1)-1);
+    return header->size & ~15;  
 }
 
 inline void mark_block_free(header_t* header) {
-    header->size |= 0x01;
+    header->size |= 1;
 }
 
 inline void mark_block_allocated(header_t* header) {
@@ -202,14 +213,35 @@ inline int block_is_free(header_t* header) {
     return header->size & 1;  // Returns 1 if last bit is 1, 0 if last bit is 0
 }
 
-inline void update_prev_allocation_status(header_t* header) {
-
+inline void set_prev_allocation_status_free(header_t* header) {
+    if (header->next) {
+        header->next->size = header->next->size | 2;
+    }
 }
 
-inline int prev_block_is_free(header_t* header) {
+inline void set_prev_allocation_status_allocated(header_t* header) {
+    if (header->next)
+        header->next->size = header->next->size & ~2;
+}
 
+
+inline int prev_block_is_free(header_t* header) {
+    size_t x = (header->size & 2);
+    return x>>1;  // Returns 1 if last bit is 1, 0 if last bit is 0
 }
 
 void place_footer(header_t* header) {
+    printf("%p\n", header);
+    printf("%d\n", get_block_size(header));
+    printf("%d\n", header_size);
+    printf("%d\n", footer_size);
+    printf("%p\n", header + get_block_size(header) + header_size-footer_size);
 
+    char* tmp = (char*)(header) + get_block_size(header) + header_size - footer_size;
+    footer_t* footer = (footer_t*)tmp;
+    footer->header = header;
+}
+
+footer_t* get_footer(header_t* header) {
+    return ((footer_t*)(header + get_block_size(header) + header_size - footer_size));
 }

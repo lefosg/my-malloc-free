@@ -7,12 +7,28 @@
 
 int main(int argc, char* argv[]) {
 
-    int k = 16;
-    int is_free = 1<<0;
-    int prev_free = 1 << 1;
+    int* p1 = allocate(4);
+    int* p2 = allocate(4);
+    int* p3 = allocate(4);
 
-    printf("%d", k | is_free | prev_free);
 
-    
+    print_heap();
+
+    *p1 = 4;
+    *p2 = 98;
+    *p3 = 56;
+
+    free(p2);
+
+    print_heap();
+
+    free(p3);
+
+    print_heap();
+
+    free(p1);
+
+    print_heap();
+
     return 0;
 }
