@@ -7,6 +7,8 @@
 #define ALIGN_SIZE 16
 
 typedef struct header header_t;
+typedef struct footer footer_t;
+
 
 /**
  * The metadata header written right before the pointer returned by the allocate function
@@ -17,6 +19,13 @@ struct header {
     struct header* next;
 };
 
+/**
+ * Footer is placed at the end of a block when it is freed. That way, a block can know
+ * where/how to find the previous block quickly 
+ */
+struct footer {
+    header_t* header;
+};
 
 
 // ================= API =================
@@ -135,3 +144,33 @@ size_t get_block_size(header_t* size);
  * @returns 1 if the block is free, else returns 0;
  */
 int block_is_free(header_t* header);
+
+/**
+ * Returns 1 if the previous block of a given header is free, else returns 0;
+ */
+int prev_block_is_free(header_t* header);
+
+/**
+ * Used to set the 'prev_free' bit to 1. When a block is freed, this function
+ * is called to update the next header, that right now, its previous header was freed.
+ */
+void set_prev_allocation_status_free(header_t* header);
+
+/**
+ * Used to set the 'prev_free' bit to 0. When a block is freed, this function
+ * is called to update the next header, that right now, its previous header was freed.
+ */
+void set_prev_allocation_status_allocated(header_t* header);
+
+/**
+ * When a block is freed OR split, we need to place a footer at the end.
+ * @param header of the block, to which we want to place a footer
+ */
+void place_footer(header_t* header);
+
+/**
+ * Gets the footer of the given header. Should only be called when coalescing
+ * @param header of the block
+ * @returns the footer
+ */
+footer_t* get_footer(header_t* header);
