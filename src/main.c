@@ -10,26 +10,26 @@ int main(int argc, char* argv[]) {
 
     srand(time(NULL));
 
-    void* p1 = allocate(rand());
-    void* p2 = allocate(rand());
-    void* p3 = allocate(rand());
-    void* p4 = allocate(rand());
-    void* p5 = allocate(rand());
-    void* p6 = allocate(rand());
-    void* p7 = allocate(rand());
-    void* p8 = allocate(rand());
-    void* p9 = allocate(rand());
-    void* p10 = allocate(rand());
-    void* p11 = allocate(rand());
-    void* p12 = allocate(rand());
-    void* p13 = allocate(rand());
-    void* p14 = allocate(rand());
-    void* p15 = allocate(rand());
-    void* p16 = allocate(rand());
-    void* p17 = allocate(rand());
-    void* p18 = allocate(rand());
-    void* p19 = allocate(rand());
-    void* p20 = allocate(rand());
+    void* p1 = allocate(1475137632);
+    void* p2 = allocate(1071021120);
+    void* p3 = allocate(1475137632);
+    void* p4 = allocate(1071021120);
+    void* p5 = allocate(100);
+    void* p6 = allocate(100);
+    void* p7 = allocate(100);
+    void* p8 = allocate(100);
+    void* p9 = allocate(100);
+    void* p10 = allocate(100);
+    void* p11 = allocate(100);
+    void* p12 = allocate(100);
+    void* p13 = allocate(100);
+    void* p14 = allocate(100);
+    void* p15 = allocate(100);
+    void* p16 = allocate(100);
+    void* p17 = allocate(100);
+    void* p18 = allocate(100);
+    void* p19 = allocate(100);
+    void* p20 = allocate(100);
 
     print_heap();
 
