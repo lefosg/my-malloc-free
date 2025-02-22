@@ -32,10 +32,13 @@ int main(int argc, char* argv[]) {
     void* p20 = allocate(100);
 
     print_heap();
-
-    free(p1);
-    free(p2);
     
+    free(p20);
+    void* a = allocate(200);
+
     print_heap();
+    
+    
 }
+
 
