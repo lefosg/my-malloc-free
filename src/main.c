@@ -34,19 +34,8 @@ int main(int argc, char* argv[]) {
     print_heap();
 
     free(p1);
-    free(p3);
-    free(p5);
-    free(p7);
-    free(p9);
-    free(p11);
-    free(p13);
-    free(p15);
-    free(p17);
-    free(p19);
-    print_heap();
-
-    free(p20);
-    free(p18);
+    free(p2);
+    
     print_heap();
 
     return 0;

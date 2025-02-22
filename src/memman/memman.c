@@ -177,6 +177,7 @@ void print_heap(void) {
     printf("\n====== PRINT HEAP START ======\n");
     int heap_len=0;
     for (header_t* header = heap_head; header != NULL; header = header->next) {
+        printf("\t Block: %d\n", heap_len+1);
         printf("Header address: %p\n", header);
         printf("Is Free: %u\n", block_is_free(header));
         printf("Is Prev Free Bit: %u\n", prev_block_is_free(header));
