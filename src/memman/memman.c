@@ -94,8 +94,12 @@ void coalesce_successor(header_t* header) {
     if (header->next && block_is_free(header->next)) { //&& header->next->is_free
         // header->next->is_free = 0;
         mark_block_allocated(header->next);
+        int prev_free = prev_block_is_free(header);
         header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
         mark_block_free(header);
+        if (prev_free)
+            header->size = header->size | 2;
+            
         if (header->next == heap_tail) {
             heap_tail = header;
             header->next=NULL;
