@@ -109,10 +109,7 @@ void coalesce_successor(header_t* header) {
             header->next = header->next->next;
         }
     }
-    //check if can coalesce with previous
-    // header_t* prev = search_prev_header(header);
-    // if (prev && block_is_free(prev))  // && prev->is_free
-    //     coalesce_successor(prev);
+    // check if can coalesce with previous
     // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce (MUCH faster)
     if (prev_block_is_free(header)) {
         header_t* prev = (((footer_t*)header)-1)->header;
