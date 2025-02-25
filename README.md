@@ -43,7 +43,7 @@ That way, when wanting to free an mmap'd pointer, we traverse the heap. I
 
 ### Tradeoff
 
-1. By this solution we introduce external fragmentation of the order of 32 bytes. If we have mulitple big allocations (>128KB), we have to store many small headers. When we later free them, the heap will end up containing small free blocks here and there.
+1. By this solution we introduce external fragmentation of the order of 32 bytes. If we have mulitple big allocations (>128KB), we have to store many small headers. When we later free them, the heap will end up containing small free blocks here and there (but they may be coalesced).
 
 2. Linear time to find if a pointer was mmap'd
 
