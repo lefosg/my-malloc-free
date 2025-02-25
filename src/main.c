@@ -20,7 +20,13 @@ int main(int argc, char* argv[]) {
     free(b);
     print_heap();
 
+    free(p1);
+    b = allocate(129*1024);
 
+    print_heap();
+    free(b);
+    
+    print_heap();
     
     return 0;
 }

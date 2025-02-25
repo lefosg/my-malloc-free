@@ -50,18 +50,18 @@ void* allocate_with_mmap(size_t size) {
         return NULL;
     // if mmap successful, store a mmap_header in the heap
     pthread_mutex_lock(&global_alloc_lock);
-    mmap_header_t* mmap_header = (mmap_header_t*)first_fit_search(mmap_hdr_size);
+    mmap_header_t* mmap_header = (mmap_header_t*)first_fit_search(mmap_hdr_size-header_size);
     if (mmap_header) {  // alocate space if there is enough in heap
         mmap_header->ptr_size = size;
         mark_block_allocated((header_t*)mmap_header);
         mmap_header->mmap_ptr = pointer;
         //check if needed to split the block
-        split_block((header_t*)mmap_header, mmap_hdr_size);
+        split_block((header_t*)mmap_header, mmap_hdr_size-header_size);
         mark_block_mmaped(mmap_header);
         pthread_mutex_unlock(&global_alloc_lock);
         return pointer;
     } else {  // extend heap
-        mmap_header_t* newmmap_h = (mmap_header_t*)get_header_of_ptr(extend_heap(mmap_hdr_size));
+        mmap_header_t* newmmap_h = (mmap_header_t*)get_header_of_ptr(extend_heap(mmap_hdr_size-header_size));
         mark_block_mmaped(newmmap_h);
         newmmap_h->ptr_size = size;
         newmmap_h->mmap_ptr = pointer;
