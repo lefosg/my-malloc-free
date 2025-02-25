@@ -1,11 +1,15 @@
 .PHONY: all clean
 
 # Default target
-all: build/main
+all: build/main build/memman.so
 
-# Rule to compile main.c and memman.c into an executable
-build/main: src/main.c src/memman/memman.c
-	gcc -Wall -ggdb src/main.c src/memman/memman.c -o $@
+# to run the binary, store both files in same folder or
+# with LD_LIBRARY_PATH="path/to/.so/folder;LD_LIBRARY_PATH" ./main
+build/main: src/main.c build/memman.so
+	gcc -Wall -o $@ $^ -L. 
+
+build/memman.so: src/memman/memman.c src/memman/memman.h
+	gcc -Wall -g -fPIC -shared -o $@ src/memman/memman.c -lc
 
 # Clean build files
 clean: 
