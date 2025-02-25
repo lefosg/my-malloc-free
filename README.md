@@ -1,6 +1,6 @@
 # My malloc/free
 
-## Fast version
+## Hybrid mmap/sbrk version
 
 Same codebase a the main branch aka implicit free list. In this branch we implement a hybrid version which uses `sbrk` and `mmap` functions.
 
