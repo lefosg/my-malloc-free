@@ -2,12 +2,15 @@
 #include <stdio.h>  //for some prints
 #include <pthread.h>
 #include <errno.h>
+#include <sys/mman.h>
 
-#define SPLIT_TOL 0.4
+#define SPLIT_TOL 0.3
 #define ALIGN_SIZE 16
+#define MMAP_THRESHOLD (128 * 1024)  //128KB
 
 typedef struct header header_t;
 typedef struct footer footer_t;
+typedef struct mmap_header mmap_header_t;
 
 
 /**
@@ -18,6 +21,16 @@ struct header {
     // int is_free;
     struct header* next;
 };
+
+/**
+ * The metadata header to write for mmaped pointers
+*/
+struct mmap_header {
+    size_t size;
+    struct header* next;
+    void* mmap_ptr;
+};
+
 
 /**
  * Footer is placed at the end of a block when it is freed. That way, a block can know
@@ -166,3 +179,23 @@ void place_footer(header_t* header);
  * @returns the footer
  */
 footer_t* get_footer(header_t* header);
+
+/**
+ * Check if a given header is mmaped or not -> note, creates external fragmentation
+ */
+int header_is_mmaped(mmap_header_t* mmap_h);
+
+/**
+ * Mark the 3rd bit of the size variable as 1 'mmaped'
+ */
+void mark_block_mmaped(mmap_header_t* mmap_h);
+
+/**
+ * Mark the 3rd bit of the size variable as 0 'unmmaped'
+ */
+void mark_block_unmmaped(mmap_header_t* mmap_h);
+
+/**
+ * Prints info of a mmap_header_t header;
+ */
+void print_mmap_header_info(mmap_header_t* mmap_h);

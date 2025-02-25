@@ -1,8 +1,11 @@
 #include "memman.h"
 
 header_t *heap_head, *heap_tail;
+
 size_t header_size = sizeof(header_t); 
 size_t footer_size = sizeof(footer_t);
+size_t mmap_hdr_size = sizeof(mmap_header_t);
+
 pthread_mutex_t global_alloc_lock;
 
 
@@ -10,6 +13,29 @@ void* allocate(size_t size) {
     if (size == 0 || size >= __PTRDIFF_MAX__) {
         errno = ENOMEM;
         return NULL;
+    }
+    // allocate with mmap if size is  big enough
+    if (size >= MMAP_THRESHOLD) {
+        //mmap takes care of alignment
+        void* pointer = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        if (pointer == (void *) -1)
+            return NULL;
+        // if mmap successful, store a mmap_header in the heap
+        pthread_mutex_lock(&global_alloc_lock);
+        mmap_header_t* mmap_header = (mmap_header_t*)first_fit_search(mmap_hdr_size);
+        if (mmap_header) {  // alocate space if there is enough in heap
+            mark_block_allocated((header_t*)mmap_header);
+            mmap_header->mmap_ptr = pointer;
+            //check if needed to split the block
+            split_block((header_t*)mmap_header, mmap_hdr_size);
+            mark_block_mmaped(mmap_header);
+            pthread_mutex_unlock(&global_alloc_lock);
+        } else {  //extend heap
+            mmap_header_t* newmmap_h = (mmap_header_t*)get_header_of_ptr(extend_heap(mmap_hdr_size));
+            mark_block_mmaped(newmmap_h);
+            newmmap_h->mmap_ptr = pointer;
+        }
+        return pointer;
     }
 
     //check if heap already has some gap of requested size
@@ -21,7 +47,6 @@ void* allocate(size_t size) {
 	pthread_mutex_lock(&global_alloc_lock);
     header = first_fit_search(size);
     if (header) {
-        // header->is_free = 0;
         mark_block_allocated(header);
         //check if needed to split the block
         split_block(header, size);
@@ -70,8 +95,9 @@ void free(void* ptr) {
         return;
         
     pthread_mutex_lock(&global_alloc_lock);
-    // is this pointer valid? was it malloc'd?  
+    // is this pointer valid? was it malloc'd? was it mmaped? consider it was mmaped
     if (ptr < (void*)heap_head || ptr > (void*)(heap_tail+1)){
+        // munmap(ptr);
         return;
     }
 
@@ -82,7 +108,6 @@ void free(void* ptr) {
     //if needed, coalesce
     
     mark_block_free(tmp);
-
 
     coalesce_successor(tmp);
     // mark_block_free(tmp);
@@ -183,6 +208,7 @@ void print_heap(void) {
         printf("Header address: %p\n", header);
         printf("Is Free: %u\n", block_is_free(header));
         printf("Is Prev Free Bit: %u\n", prev_block_is_free(header));
+        printf("Is mmap'd: %u\n", header_is_mmaped((mmap_header_t*)header));
         printf("Size: %ld\n", get_block_size(header));
         heap_len++;
     }
@@ -245,4 +271,26 @@ void place_footer(header_t* header) {
 
 footer_t* get_footer(header_t* header) {
     return ((footer_t*)(header + get_block_size(header) + header_size - footer_size));
+}
+
+int header_is_mmaped(mmap_header_t* mmap_h) {
+    return (mmap_h->size & 4) >> 2;
+}
+
+inline void mark_block_mmaped(mmap_header_t* mmap_h) {
+    mmap_h->size |= 4;
+}
+
+inline void mark_block_unmmaped(mmap_header_t* mmap_h) {
+    mmap_h->size &= ~4;
+}
+
+void print_mmap_header_info(mmap_header_t* mmap_h) {
+    printf("\n====== PRINT MMAP HEADER INFO START ======\n");
+    printf("Header: %p\n", mmap_h);
+    printf("Pointer: %p\n", mmap_h->mmap_ptr);
+    printf("Size: %ld\n", get_block_size((header_t*)mmap_h));
+    printf("Mmap'd pointer: %u\n", header_is_mmaped(mmap_h));
+    printf("Next: %p\n", mmap_h->next);
+    printf("====== PRINT MMAP HEADER INFO END ======\n");
 }
