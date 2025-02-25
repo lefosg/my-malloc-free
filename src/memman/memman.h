@@ -65,27 +65,11 @@ void* extend_heap(size_t size);
 header_t* first_fit_search(size_t size);
 
 /**
- * Checks if a block to be allocated is too big, and the request only needs a small
- * portion of it. If that is the case, split the big block into two.
- * @param prev pointer to the header of block to be allocated
- * @param size how much size is requested (the "small" portion)
- * @returns void - the linked list is 
-*/
-void split_block(header_t* prev, size_t size);
-
-/**
- * Called by free. It checks if the next header is an empty block. If it is,
- * it coalesces (merges) the two blocks into one
- * @param header pointer to the current header (trying to coalesce with the next)
- * @returns a pointer to the new header. If coalesced, header should be different. If not coalesced,
- * it returns the initial header.
- * 
- * Some thoughts: need to coalesce with prev and next neighbours? Easy to find next. Options for previous:
- * Search from the start -> slow (Currently implemented!)
- * If a previous search has been done, keep pass in the prev pointer as param as well
- * Double link the list
-*/
-void coalesce_successor(header_t* header);
+ * Searches the heap for available space using next fit algorithm
+ * @param size to look for
+ * @returns header to the block found
+ */
+header_t* next_fit_search(size_t size);
 
 /**
  * Returns the previous block header. Serial search from head to given one.
@@ -136,33 +120,3 @@ size_t get_block_size(header_t* size);
  * Returns 1 if the block is free, else returns 0;
  */
 int block_is_free(header_t* header);
-
-/**
- * Returns 1 if the previous block of a given header is free, else returns 0;
- */
-int prev_block_is_free(header_t* header);
-
-/**
- * Used to set the 'prev_free' bit to 1. When a block is freed, this function
- * is called to update the next header, that right now, its previous header was freed.
- */
-void set_prev_allocation_status_free(header_t* header);
-
-/**
- * Used to set the 'prev_free' bit to 0. When a block is freed, this function
- * is called to update the next header, that right now, its previous header was freed.
- */
-void set_prev_allocation_status_allocated(header_t* header);
-
-/**
- * When a block is freed OR split, we need to place a footer at the end.
- * @param header of the block, to which we want to place a footer
- */
-void place_footer(header_t* header);
-
-/**
- * Gets the footer of the given header. Should only be called when coalescing
- * @param header of the block
- * @returns the footer
- */
-footer_t* get_footer(header_t* header);
