@@ -15,17 +15,18 @@ void* allocate(size_t size) {
         return NULL;
     }
     // allocate with mmap if size is  big enough
-    if (size >= MMAP_THRESHOLD) {
-        void* ptr = allocate_with_mmap(size);  //internally does mutex lock/unlock
-        return ptr;
-    }
-
     //check if heap already has some gap of requested size
     header_t* header;
     if (size < ALIGN_SIZE)
         size = ALIGN_SIZE;
     else   
         size = ALIGN_SIZE * (int)((size + (ALIGN_SIZE-1)) / ALIGN_SIZE);
+
+    if (size >= MMAP_THRESHOLD) {
+        void* ptr = allocate_with_mmap(size);  //internally does mutex lock/unlock
+        return ptr;
+    }
+    
 	pthread_mutex_lock(&global_alloc_lock);
     header = first_fit_search(size);
     if (header) {
@@ -51,6 +52,7 @@ void* allocate_with_mmap(size_t size) {
     pthread_mutex_lock(&global_alloc_lock);
     mmap_header_t* mmap_header = (mmap_header_t*)first_fit_search(mmap_hdr_size);
     if (mmap_header) {  // alocate space if there is enough in heap
+        mmap_header->ptr_size = size;
         mark_block_allocated((header_t*)mmap_header);
         mmap_header->mmap_ptr = pointer;
         //check if needed to split the block
@@ -58,11 +60,12 @@ void* allocate_with_mmap(size_t size) {
         mark_block_mmaped(mmap_header);
         pthread_mutex_unlock(&global_alloc_lock);
         return pointer;
-    } else {
-        //extend heap
+    } else {  // extend heap
         mmap_header_t* newmmap_h = (mmap_header_t*)get_header_of_ptr(extend_heap(mmap_hdr_size));
         mark_block_mmaped(newmmap_h);
+        newmmap_h->ptr_size = size;
         newmmap_h->mmap_ptr = pointer;
+        print_mmap_header_info(newmmap_h);
         pthread_mutex_unlock(&global_alloc_lock);
         return pointer;
     }
@@ -104,24 +107,40 @@ void free(void* ptr) {
         
     pthread_mutex_lock(&global_alloc_lock);
     // is this pointer valid? was it malloc'd? was it mmaped? consider it was mmaped
-    if (ptr < (void*)heap_head || ptr > (void*)(heap_tail+1)){
-        // munmap(ptr);
-        return;
+    header_t* tmp;
+    if ( ptr > (void*)(heap_tail+1)){  //ptr < (void*)heap_head || condition removed
+        mmap_header_t* mmap_h = free_with_munmap(ptr); //checks if the ptr is stored in one of the metadata mmap_header headers
+        tmp = (header_t*)mmap_h;
+        mark_block_unmmaped(mmap_h);
+    } else {
+        tmp = get_header_of_ptr(ptr);   
     }
 
-    //if all checks ok, mark free
-    header_t* tmp = get_header_of_ptr(ptr);
-    // tmp->is_free = 1;
-    
-    //if needed, coalesce
-    
-    mark_block_free(tmp);
 
+    //if all checks ok, mark free
+    print_header_info(tmp);
+    print_mmap_header_info((mmap_header_t*)tmp);
+    //if needed, coalesce
+    mark_block_free(tmp);
     coalesce_successor(tmp);
     // mark_block_free(tmp);
     place_footer(tmp);
     set_prev_allocation_status_free(tmp);
 	pthread_mutex_unlock(&global_alloc_lock);
+}
+
+mmap_header_t* free_with_munmap(void* ptr) {
+    // find the header of the mmap'd pointer, get the size, and munmap
+    for (header_t* curr = heap_head; curr != NULL; curr = curr->next) {
+        if (!header_is_mmaped((mmap_header_t*)curr)) continue; //if not mmaped, go to next
+        mmap_header_t* mmap_h = (mmap_header_t*) curr;
+        if (mmap_h->mmap_ptr == ptr) {
+                size_t size = mmap_h->ptr_size;
+                munmap(ptr, size);
+                return mmap_h;
+        }
+    }
+    return NULL;
 }
 
 void coalesce_successor(header_t* header) {
@@ -299,6 +318,7 @@ void print_mmap_header_info(mmap_header_t* mmap_h) {
     printf("Pointer: %p\n", mmap_h->mmap_ptr);
     printf("Size: %ld\n", get_block_size((header_t*)mmap_h));
     printf("Mmap'd pointer: %u\n", header_is_mmaped(mmap_h));
+    printf("Pointer size: %u\n", mmap_h->size);
     printf("Next: %p\n", mmap_h->next);
     printf("====== PRINT MMAP HEADER INFO END ======\n");
 }

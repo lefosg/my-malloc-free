@@ -29,6 +29,7 @@ struct mmap_header {
     size_t size;
     struct header* next;
     void* mmap_ptr;
+    size_t ptr_size;
 };
 
 
@@ -182,6 +183,8 @@ footer_t* get_footer(header_t* header);
 
 /**
  * Check if a given header is mmaped or not -> note, creates external fragmentation
+ * @param mmap_header pointer
+ * @returns 1 for mmaped, 0 for not mmaped
  */
 int header_is_mmaped(mmap_header_t* mmap_h);
 
@@ -197,6 +200,7 @@ void mark_block_unmmaped(mmap_header_t* mmap_h);
 
 /**
  * Prints info of a mmap_header_t header;
+ * @param mmap_h an mmap_header_t* pointer
  */
 void print_mmap_header_info(mmap_header_t* mmap_h);
 
@@ -208,3 +212,10 @@ void print_mmap_header_info(mmap_header_t* mmap_h);
  * @returns a pointer to the address that mmap returns 
  */
 void* allocate_with_mmap(size_t size);
+
+/**
+ * Searches for the metadata mmap_header on the heap 
+ * and calls unmap on the address of a given ptr.
+ * @param ptr, a void* pointer to a previously mmap'd address
+ */
+mmap_header_t* free_with_munmap(void* ptr);

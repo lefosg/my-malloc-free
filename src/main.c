@@ -17,6 +17,9 @@ int main(int argc, char* argv[]) {
     print_heap();
     printf("%p", b);
 
+    free(b);
+    print_heap();
+
 
     
     return 0;
