@@ -5,7 +5,7 @@
 #include <sys/mman.h>
 
 #define SPLIT_TOL 0.3
-#define ALIGN_SIZE 16
+#define ALIGN_SIZE 8
 #define MMAP_THRESHOLD (128 * 1024)  //128KB
 
 typedef struct header header_t;
