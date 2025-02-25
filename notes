@@ -1,12 +1,12 @@
 1. implement with implicit free list
 	- first, next, best match <!-- first>
 	- coalesce on free (maybe deferred) <!-- ok>
-	- 16 byte alignment 
+	- 16 byte alignment <!-- ok>
 	- header masks last 3 bytes. lsb is is_free, lsb-1 is is_prev_allocated
 	- write some tests (+ test speed?) <!-- i guess?>
 	- if size
 	- heap arenas? <!-- mutex implemented>
-	- provide some tolerance on splitting (maybe not worth it to split for small amount of memory) <!-- OK>
+	- provide some tolerance on splitting (maybe not worth it to split for small amount of  memory) <!-- OK>
 	
 	
 2. implement with explicit free list

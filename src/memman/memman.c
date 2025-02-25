@@ -1,8 +1,12 @@
 #include "memman.h"
 
-header_t *heap_head, *heap_tail;
 size_t header_size = sizeof(header_t); 
 size_t footer_size = sizeof(footer_t);
+size_t free_block_header_size = sizeof(free_block_header_t);
+
+header_t *heap_head, *heap_tail;
+free_block_header_t* free_block_root;
+
 pthread_mutex_t global_alloc_lock;
 
 
@@ -21,7 +25,6 @@ void* allocate(size_t size) {
 	pthread_mutex_lock(&global_alloc_lock);
     header = first_fit_search(size);
     if (header) {
-        // header->is_free = 0;
         mark_block_allocated(header);
         //check if needed to split the block
         split_block(header, size);
@@ -36,6 +39,12 @@ void* allocate(size_t size) {
 }
 
 void* extend_heap(size_t size) {
+    if (heap_head == NULL) {
+        free_block_root = sbrk(free_block_header_size);
+        free_block_root->size=0;
+        free_block_root->next=NULL;
+        free_block_root->prev=NULL;
+    }
     void* ptr = sbrk(size+header_size);
     if (ptr == (void*)-1) {
         errno = ENOMEM;
@@ -77,14 +86,21 @@ void free(void* ptr) {
 
     //if all checks ok, mark free
     header_t* tmp = get_header_of_ptr(ptr);
-    // tmp->is_free = 1;
-    
-    //if needed, coalesce
-    
     mark_block_free(tmp);
-
-
-    coalesce_successor(tmp);
+    free_block_header_t* newfree = (free_block_header_t*)tmp;
+    newfree->size = tmp->size;
+    if (free_block_root->next == NULL) { //if this is the first insertion
+        free_block_root->next = newfree;
+        newfree->prev = free_block_root;
+        newfree->next = NULL;
+    } else {
+        newfree->next = free_block_root->next;
+        newfree->prev = free_block_root;
+        newfree->next->prev = newfree;
+        print_free_header_info(newfree);
+    }
+    //if needed, coalesce
+    // coalesce_successor(tmp);
     // mark_block_free(tmp);
     place_footer(tmp);
     set_prev_allocation_status_free(tmp);
@@ -92,29 +108,37 @@ void free(void* ptr) {
 }
 
 void coalesce_successor(header_t* header) {
+    free_block_header_t* newfree = (free_block_header_t*)header;
+    if (free_block_root->next == NULL) { //if this is the first insertion
+        newfree->size = header->size;
+        free_block_root->next = newfree;
+        newfree->prev = free_block_root;
+        newfree->next = NULL;
+        return;
+    }
     //merge with next block    
     if (header->next && block_is_free(header->next)) { //&& header->next->is_free
-        // header->next->is_free = 0;
         mark_block_allocated(header->next);
         int prev_free = prev_block_is_free(header);
-        header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
-        mark_block_free(header);
+        header->size = get_block_size(header) + get_block_size(header->next) + header_size; 
+        mark_block_free(header);  //deleteme after some checks (works without me)
+
+        free_block_header_t* newfree = (free_block_header_t*)header;
+        newfree->size = header->size;
+        newfree->next = free_block_root->next;
+        newfree->prev = free_block_root;
+        newfree->next->prev = newfree;
+
         if (prev_free)
             header->size = header->size | 2;
             
-        if (header->next == heap_tail) {
-            heap_tail = header;
-            header->next=NULL;
-        } else {
-            header->next = header->next->next;
-        }
-    }
-    //check if can coalesce with previous
-    // header_t* prev = search_prev_header(header);
-    // if (prev && block_is_free(prev))  // && prev->is_free
-    //     coalesce_successor(prev);
-    // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce (MUCH faster)
-    if (prev_block_is_free(header)) {
+        // if (header->next == heap_tail) {
+        //     heap_tail = header;
+        //     header->next=NULL;
+        // } else {
+        //     header->next = header->next->next;
+        // }
+    } else if (prev_block_is_free(header)) { //check if can coalesce with previous
         header_t* prev = (((footer_t*)header)-1)->header;
         coalesce_successor(prev);
     }    
@@ -245,4 +269,28 @@ void place_footer(header_t* header) {
 
 footer_t* get_footer(header_t* header) {
     return ((footer_t*)(header + get_block_size(header) + header_size - footer_size));
+}
+
+void print_free_list() {
+    printf("\n====== PRINT FREE LIST START ======\n");
+    int heap_len=0;
+    for (free_block_header_t* freeblk = free_block_root; freeblk != NULL; freeblk = freeblk->next) {
+        printf("\t Free Block: %d\n", heap_len+1);
+        printf("Header address: %p\n", freeblk);
+        printf("Size: %ld\n", get_block_size(freeblk));
+        printf("Next free block: %p\n", freeblk->next);
+        printf("Previous free block: %p\n\n", freeblk->prev);
+        heap_len++;
+    }
+    printf("No. headers: %d\n", heap_len);
+    printf("====== PRINT FREE LIST END ======\n");
+}
+
+void print_free_header_info(free_block_header_t* freeblk) {
+    printf("\n====== PRINT HEADER INFO START ======\n");
+    printf("Header address: %p\n", freeblk);
+    printf("Size: %ld\n", get_block_size(freeblk));
+    printf("Next free block: %p\n", freeblk->next);
+    printf("Previous free block: %p\n\n", freeblk->prev);
+printf("====== PRINT HEADER INFO END ======\n");
 }

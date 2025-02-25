@@ -1,12 +1,13 @@
-#include <unistd.h>  // for using sbrk, size_t, NULL
-#include <stdio.h>  //for some prints
+#include <unistd.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <errno.h>
 
 #define SPLIT_TOL 0.4
-#define ALIGN_SIZE 16
+#define ALIGN_SIZE 16  //TODO: change to 8
 
 typedef struct header header_t;
+typedef struct free_block_header free_block_header_t;
 typedef struct footer footer_t;
 
 
@@ -15,8 +16,16 @@ typedef struct footer footer_t;
 */
 struct header {
     size_t size;
-    // int is_free;
     struct header* next;
+};
+
+/**
+ * The metadata header for the free blocks
+*/
+struct free_block_header {
+    size_t size;
+    struct free_block_header* next;
+    struct free_block_header* prev;
 };
 
 /**
@@ -103,6 +112,7 @@ header_t* get_header_of_ptr(void* ptr);
 
 /**
  * Prints the current heap (pointer address, size of block, and availability aka free or not)
+ * @note Useless in explicit list implementation
 */
 void print_heap(void);
 
@@ -166,3 +176,8 @@ void place_footer(header_t* header);
  * @returns the footer
  */
 footer_t* get_footer(header_t* header);
+
+/**
+ * Print out the free list headers
+ */
+void print_free_list();
