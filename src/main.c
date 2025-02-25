@@ -13,9 +13,11 @@ int main(int argc, char* argv[]) {
     void* p4 = allocate(400);
     print_heap();
 
-    void* a = allocate(129*1024);
+    void* b = allocate(129*1024);
+    print_heap();
+    printf("%p", b);
 
-    printf("%p", a);
+
     
     return 0;
 }

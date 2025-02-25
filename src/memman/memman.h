@@ -199,3 +199,12 @@ void mark_block_unmmaped(mmap_header_t* mmap_h);
  * Prints info of a mmap_header_t header;
  */
 void print_mmap_header_info(mmap_header_t* mmap_h);
+
+/**
+ * Returns an mmap'd pointer. Internally handles mmap_header management and heap. Essentially,
+ * it is a wrapper for mmap, plus does some operations on our heap by placing
+ * mmap_header headers for metadata used in free.
+ * @param size requested
+ * @returns a pointer to the address that mmap returns 
+ */
+void* allocate_with_mmap(size_t size);
