@@ -4,7 +4,7 @@
 #include <errno.h>
 
 #define SPLIT_TOL 0.4
-#define ALIGN_SIZE 16
+#define ALIGN_SIZE 8
 
 typedef struct header header_t;
 typedef struct footer footer_t;
