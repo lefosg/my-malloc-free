@@ -145,12 +145,12 @@ Benefit: constant time to coalesce with preceding block.
 
 There is a lot of research done on memory allocators. We point out some advanced implementations, other than a simple implicit free list with first fit:
 
-- Explicit free list: see branch explicit/first-fit for that.
+- Explicit free list: see branch explicit/first-fit for that
+- Hybrid allocators: see branch implicit/hybrid-mmap for that
 - Segragated free lists
 - Buddy systems
 - Slab allocators
 - Layered architecture allocators
-- Hybrid allocators
 
 Advanced concepts to consider when building a memory allocator: 
 - Deferred coalescing
