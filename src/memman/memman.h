@@ -3,11 +3,11 @@
 #include <pthread.h>
 #include <errno.h>
 
-#define SPLIT_TOL 0.4
-#define ALIGN_SIZE 16  //TODO: change to 8
+#define SPLIT_TOL 0.35
+#define ALIGN_SIZE 8 
 
 typedef struct header header_t;
-typedef struct free_block_header free_block_header_t;
+typedef struct free_block_header free_blk_header_t;
 typedef struct footer footer_t;
 
 
