@@ -2,11 +2,6 @@
 
 Description:
 
-Implementation of my own allocate and free functions for C. Uses ``sbrk`` function. Current implementation uses implicit list and next fit algorithm.
+Codebase is the exact same as with main branch. Implicit free list. However, in the `allocate` function the search algorithm is not first fit but next fit.
 
-The main.c file is just for testing the API. The library itself is in the src/memman folder (short for memory manager).
-
-**API:**
-- allocate(size_t size): allocates <i>size</i> bytes in the heap
-- free(void* ptr): frees up the memory from a specified pointer
-
+Next fit algorithm does not search from the start every time `allocate` is called. It picks up from where it left off last time. This can (probabilistically) be a lot faster than first fit, or in the worst case, same as first fit.
