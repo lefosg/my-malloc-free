@@ -71,7 +71,7 @@ void* extend_heap(size_t size);
  * @returns (void*)-1 if size is 0. 
  * @returns NULL if no free space was found
 */
-header_t* first_fit_search(size_t size);
+free_blk_header_t* first_fit_search(size_t size);
 
 /**
  * Checks if a block to be allocated is too big, and the request only needs a small
@@ -80,7 +80,7 @@ header_t* first_fit_search(size_t size);
  * @param size how much size is requested (the "small" portion)
  * @returns void - the linked list is 
 */
-void split_block(header_t* prev, size_t size);
+void split_block(free_blk_header_t* prev, size_t size);
 
 /**
  * Called by free. It checks if the next header is an empty block. If it is,

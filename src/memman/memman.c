@@ -11,6 +11,7 @@ free_blk_header_t* free_blk_root;
 
 pthread_mutex_t global_alloc_lock;
 
+// ================= ALLOCATE =================
 
 void* allocate(size_t size) {
     if (size == 0 || size >= __PTRDIFF_MAX__) {
@@ -19,17 +20,19 @@ void* allocate(size_t size) {
     }
 
     //check if heap already has some gap of requested size
-    header_t* header;
     if (size < ALIGN_SIZE)
         size = ALIGN_SIZE;
     else   
         size = ALIGN_SIZE * (int)((size + ALIGN_SIZE + (ALIGN_SIZE-1)) / ALIGN_SIZE);
 	pthread_mutex_lock(&global_alloc_lock);
-    header = first_fit_search(size);
+    free_blk_header_t* header = first_fit_search(size);
     if (header) {
         mark_block_allocated(header);
         //check if needed to split the block
         split_block(header, size);
+        // free_blk_root->next = header->next;
+        // header->next->prev = free_blk_root;
+
 		pthread_mutex_unlock(&global_alloc_lock);
         return (void*)(header+1);
     }
@@ -77,6 +80,55 @@ void* extend_heap(size_t size) {
     return ptr;
 }
 
+void split_block(free_blk_header_t* prev, size_t size) {
+    //even when splitting, check if new header+some bytes fit
+    //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
+    long tolerance = get_block_size(prev) * SPLIT_TOL;  
+    if ((long)(get_block_size(prev) - size - header_size) <= tolerance) { //prev->size - ...
+        set_prev_allocation_status_allocated(prev);
+        return;
+    }
+
+    free_blk_header_t* newblk;
+    char* tmp = (char*)prev;  
+    //now we have a pointer looking at the addr of the prev block
+    //some math: tmp = tmp + header_size(aka skip the hdr) + prev.size (go right after the small block)
+    tmp = tmp + header_size + size;
+    newblk = (free_blk_header_t*)tmp;
+    // newblk->next = prev->next;
+    newblk->size = get_block_size(prev) - size - header_size; //prev->size
+    mark_block_free(newblk);
+    
+    newblk->next = prev->next;
+    newblk->prev = prev->prev;
+    newblk->prev->next = newblk;
+    newblk->next->prev = newblk;
+    // prev->next=newblk;
+
+    prev->size=size;
+
+    set_prev_allocation_status_free(newblk);
+    place_footer(newblk);
+}
+
+free_blk_header_t* first_fit_search(size_t size) {
+
+    if (size == 0)  //could skip this check?? already done above
+        return NULL;
+    
+    free_blk_header_t *curr = free_blk_root;
+    while (curr) {
+        if (get_block_size(curr) >= size && block_is_free(curr)) {  //curr->size >= size && curr->is_free == 1
+            return curr;
+        }
+        curr = curr->next;
+    }
+    return NULL;
+}
+
+
+// ================= FREE =================
+
 void free(void* ptr) {
     if (!ptr)
         return;
@@ -91,12 +143,11 @@ void free(void* ptr) {
     header_t* tmp = get_header_of_ptr(ptr);
     mark_block_free(tmp);
     // coalesce_successor(tmp);
-    mark_block_free(tmp);
-    place_footer(tmp);
-    set_prev_allocation_status_free(tmp);
+    // mark_block_free(tmp);
+    // place_footer(tmp);
+    // set_prev_allocation_status_free(tmp);
     free_blk_header_t* newfree = (free_blk_header_t*)tmp;
     newfree->size = tmp->size;
-    printf("\n%p\n",free_blk_root->next);
     if (free_blk_root->next == NULL) { //if this is the first insertion
         free_blk_root->next = newfree;
         newfree->prev = free_blk_root;
@@ -163,50 +214,8 @@ header_t* search_prev_header(header_t* header) {
     return NULL;
 }
 
-void split_block(header_t* prev, size_t size) {
-    //even when splitting, check if new header+some bytes fit
-    //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
-    long tolerance = get_block_size(prev) * SPLIT_TOL;  //prev->size * SPLIT_TOL
-    if ((long)(get_block_size(prev) - size - header_size) <= tolerance) { //prev->size - ...
-        set_prev_allocation_status_allocated(prev);
-        return;
-    }
 
-    header_t* newblk;
-    char* tmp = (char*)prev;  
-    //now we have a pointer looking at the addr of the prev block
-    //some math: tmp = tmp + header_size(aka skip the hdr) + prev.size (go right after the small block)
-    tmp = tmp + header_size + size;
-    newblk = (header_t*)tmp;
-
-
-    newblk->next = prev->next;
-    // newblk->is_free = 1;
-    newblk->size = get_block_size(prev) - size - header_size; //prev->size
-    mark_block_free(newblk);
-    
-    prev->next=newblk;
-    prev->size=size;
-
-    set_prev_allocation_status_free(newblk);
-    place_footer(newblk);
-}
-
-header_t* first_fit_search(size_t size) {
-
-    if (size == 0)  //could skip this check??
-        return NULL;
-    
-    header_t *curr = heap_head;
-    while (curr) {
-        if (get_block_size(curr) >= size && block_is_free(curr)) {  //curr->size >= size && curr->is_free == 1
-            return curr;
-        }
-        curr = curr->next;
-    }
-    return NULL;
-}
-
+// ================= HELPER FUNCTIONS =================
 
 void print_heap(void) {
     printf("\n====== PRINT HEAP START ======\n");
