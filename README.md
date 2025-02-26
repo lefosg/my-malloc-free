@@ -99,7 +99,7 @@ void somefunc(void) {
 ![alt text](assets/mainfree.png)
 
 All we have to do is move the pointer `sizeof(header)` bytes back, and mark the area as `free`. Even though data already exists inside that block, it is marked as free, and thus **reusable**.
-It is important to understand that the data is not NULL-ed, we just wait for another pointer to overwrite that area (use-after-free and other vulnerabilities arise).
+It is important to understand that the data is not NULL-ed, we just wait for another pointer to overwrite that area (vulnerabilities like use-after-free arise).
 
 **Coalescing** 
 
@@ -157,6 +157,7 @@ Advanced concepts to consider when building a memory allocator:
 - Program patterns (ramp, peak, plateau)
 - How much fragmentation to tolerate
 - Memory arenas (thread safety plus speed)
+- Preallocation
 
 ## Resources
 
