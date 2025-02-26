@@ -97,7 +97,6 @@ void split_block(free_blk_header_t* prev, size_t size) {
     //some math: tmp = tmp + header_size(aka skip the hdr) + prev.size (go right after the small block)
     tmp = tmp + header_size + size;
     newblk = (free_blk_header_t*)tmp;
-    // newblk->next = prev->next;
     newblk->size = get_block_size(prev) - size - header_size; //prev->size
     mark_block_free(newblk);
     
@@ -105,7 +104,6 @@ void split_block(free_blk_header_t* prev, size_t size) {
     newblk->prev = prev->prev;
     newblk->prev->next = newblk;
     newblk->next->prev = newblk;
-    // prev->next=newblk;
 
     prev->size=size;
 
