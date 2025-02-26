@@ -37,7 +37,7 @@ struct header {
 
 ## Allocate
 
-When we call allocate, we under the hood `sbrk` is called. First we place a header containing the size requested, and a pointer to the next header (or NULL if it is the tail of the list). This happens because allocate and free calls are random, so we reclaim space freed and save time from making the sbrk system call.
+When we call allocate, `sbrk` is called under the hood. First we place a header containing the size requested, and a pointer to the next header (or NULL if it is the tail of the list). This happens because allocate and free calls are random, so we reclaim space freed and save time from making the sbrk system call.
 
 We implement 8 byte alignment. All `struct header` pointers start at an address divisible by 8, and all sizes requested are aligned to the next nearest multiple of 8 (e.g., 7 becomes 8, 10 becomes 16 etc). That means that the payload of a block (the actual data) are padded up to the next multiple of 8 (a little bit of internal fragmentation).
 
