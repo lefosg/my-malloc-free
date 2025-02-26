@@ -142,11 +142,13 @@ void free(void* ptr) {
     //if all checks ok, mark free
     header_t* tmp = get_header_of_ptr(ptr);
     mark_block_free(tmp);
-    // coalesce_successor(tmp);
-    // mark_block_free(tmp);
-    // place_footer(tmp);
-    // set_prev_allocation_status_free(tmp);
+
     free_blk_header_t* newfree = (free_blk_header_t*)tmp;
+    // coalesce_successor(tmp);
+    
+    place_footer(tmp);
+    set_prev_allocation_status_free(tmp);
+    
     newfree->size = tmp->size;
     if (free_blk_root->next == NULL) { //if this is the first insertion
         free_blk_root->next = newfree;
@@ -171,9 +173,9 @@ void coalesce_successor(header_t* header) {
         return;
     }
     //merge with next block    
-    if (header->next && block_is_free(header->next)) { //&& header->next->is_free
-        // header->next->is_free = 0;
-        mark_block_allocated(header->next);
+    header_t* next = (char*)header + header_size + get_block_size(header);
+    if (next && block_is_free(next)) { //&& header->next->is_free
+        mark_block_allocated(next);
         int prev_free = prev_block_is_free(header);
         header->size = get_block_size(header) + get_block_size(header->next) + header_size; 
         mark_block_free(header);  //deleteme after some checks (works without me)
