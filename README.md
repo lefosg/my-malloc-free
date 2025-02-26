@@ -140,3 +140,29 @@ Summary of the `size` field of the header struct:
 ![alt text](assets/lsb.png)
 
 Benefit: constant time to coalesce with preceding block.
+
+## Further research
+
+There is a lot of research done on memory allocators. We point out some advanced implementations, other than a simple implicit free list with first fit:
+
+- Explicit free list: see branch explicit/first-fit for that.
+- Segragated free lists
+- Buddy systems
+- Slab allocators
+- Layered architecture allocators
+- Hybrid allocators
+
+Advanced concepts to consider when building a memory allocator: 
+- Deferred coalescing
+- Program patterns (ramp, peak, plateau)
+- How much fragmentation to tolerate
+- Memory arenas (thread safety plus speed)
+
+## Resources
+
+1. [Computer Systems A Programmer's Perspective](https://www.cs.sfu.ca/~ashriram/Courses/CS295/assets/books/CSAPP_2016.pdf)
+2. [IIT - Implementing Malloc](https://moss.cs.iit.edu/cs351/slides/slides-malloc.pdf)
+3. [UWaterloo - Dynamic Memory Allocation](https://rcs.uwaterloo.ca/~ali/cs350-f19/allocation.pdf)
+4. [Carnegie Mellon University Lectures (19 & 20)](https://scs.hosted.panopto.com/Panopto/Pages/Sessions/List.aspx)
+5. [Composing High-Performance Memory Allocators](https://people.cs.umass.edu/~emery/pubs/berger-pldi2001.pdf)
+6. [LLFREE: Scalable and Optionally-Persistent Page-Frame Allocation](https://www.usenix.org/system/files/atc23-wrenger.pdf)
