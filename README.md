@@ -166,3 +166,4 @@ Advanced concepts to consider when building a memory allocator:
 4. [Carnegie Mellon University Lectures (19 & 20)](https://scs.hosted.panopto.com/Panopto/Pages/Sessions/List.aspx)
 5. [Composing High-Performance Memory Allocators](https://people.cs.umass.edu/~emery/pubs/berger-pldi2001.pdf)
 6. [LLFREE: Scalable and Optionally-Persistent Page-Frame Allocation](https://www.usenix.org/system/files/atc23-wrenger.pdf)
+7. [Doug Lea Memory Allocator](https://gee.cs.oswego.edu/dl/html/malloc.html)
