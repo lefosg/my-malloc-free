@@ -35,8 +35,11 @@ int main(int argc, char* argv[]) {
     // free(p7);
     print_free_list();
 
-    void* a = allocate(100);
+    void* a = allocate(1000);
+
+    free(a);
     
+    a = allocate(900);
     print_free_list();
 
     return 0;

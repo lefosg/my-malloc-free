@@ -86,6 +86,8 @@ void split_block(free_blk_header_t* prev, size_t size) {
     long tolerance = get_block_size(prev) * SPLIT_TOL;  
     if ((long)(get_block_size(prev) - size - header_size) <= tolerance) { //prev->size - ...
         set_prev_allocation_status_allocated(prev);
+        prev->prev->next = prev->next;
+        prev->next->prev = prev->prev;
         return;
     }
 
