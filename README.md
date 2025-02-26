@@ -9,18 +9,22 @@ Implementation of my own `allocate` and `free` functions for C. Uses ``sbrk`` fu
 The main.c file is just for testing the API. The library itself is in the src/memman folder (short for memory manager).
 
 **API:**
-- allocate(size_t size): allocates <i>size</i> bytes in the heap - returns a pointer to an address on the heap
-- free(void* ptr): frees up the memory from a specified pointer - does not return anything
+| Function | Description | Returns |
+|----------|-------------|---------|
+| allocate(size_t size) | allocates <i>size</i> bytes in the heap | returns a pointer to an address on the heap |
+| free(void* ptr) | frees up the memory from a specified pointer | does not return anything |
 
 ## Run
 
-Compile the library using the `make` command. The make file generates a .so file under the build/ directory to link the library to your own program (#include "memman.h"). There is also a `main.c` file which is for testing the allocator.
+Compile the library using the `make` command. The Makefile generates a .so file under the build/ directory to link the library to your own program (#include "memman.h"). There is also a `main.c` file which is for testing the allocator.
 
 The script `run.sh` does everything for you, compiles and runs the program you wrote.
 
 ## Implementation specifics
 
 ![alt text](https://courses.grainger.illinois.edu/cs225/sp2023/assets/notes/stack_heap_memory/memory_layout.png)
+
+The job of a memory allocator is to ask for some memory, and get a pointer in return, which points to an address on the heap.
 
 Since we cannot just randomly ask for spare space in the heap, we need to somehow keep track of what is allocated and what is free. This is done using a linked list, with the struct shown below.
 
