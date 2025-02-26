@@ -32,3 +32,5 @@ struct free_blk_header {
 ```
 
 Trees have lower time complexity (O(logn)) in comparison to linked lists (O(n)).
+
+**NOTE**: coalescing needs fixing
