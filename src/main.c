@@ -28,10 +28,12 @@ int main(int argc, char* argv[]) {
     // void* p18 = allocate(100);
     // void* p19 = allocate(100);
     // void* p20 = allocate(100);
-    free(p2);
-      print_free_list();
-
+    free(p6);
+    free(p3);
     free(p1);
+    print_free_list();
+
+    free(p5);
     print_free_list();
 
 

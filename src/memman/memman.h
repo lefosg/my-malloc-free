@@ -86,15 +86,9 @@ void split_block(free_blk_header_t* prev, size_t size);
  * Called by free. It checks if the next header is an empty block. If it is,
  * it coalesces (merges) the two blocks into one
  * @param header pointer to the current header (trying to coalesce with the next)
- * @returns a pointer to the new header. If coalesced, header should be different. If not coalesced,
- * it returns the initial header.
- * 
- * Some thoughts: need to coalesce with prev and next neighbours? Easy to find next. Options for previous:
- * Search from the start -> slow (Currently implemented!)
- * If a previous search has been done, keep pass in the prev pointer as param as well
- * Double link the list
+ * @returns 1 if coalesced with successor, else 0
 */
-void coalesce_successor(header_t* header);
+int coalesce_successor(header_t* header);
 
 /**
  * Returns the previous block header. Serial search from head to given one.
