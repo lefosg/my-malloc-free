@@ -1,12 +1,11 @@
 # My malloc/free
 
-## Baseline implementation
+## Baseline implementation - Implicit List w/ First Fit
 
 **Description**:
 
-Implementation of my own `allocate` and `free` functions for C. Uses ``sbrk`` function. Current implementation uses implicit list and first fit algorithm. It is more of a general purpose allocator. 
+Implementation of my own `allocate` and `free` functions for C. Uses ``sbrk`` function. In this branch, the implementation uses implicit list and first fit algorithm. It is more of a general purpose allocator. 
 
-The main.c file is just for testing the API. The library itself is in the src/memman folder (short for memory manager).
 
 **API:**
 | Function | Description | Returns |
@@ -20,13 +19,16 @@ Compile the library using the `make` command. The Makefile generates a .so file 
 
 The script `run.sh` does everything for you, compiles and runs the program you wrote.
 
+Under the `src` folder there is main.c and memman folder where the library resides. 
+The main.c file is just for testing the API.
+
 ## Implementation specifics
 
 ![alt text](https://courses.grainger.illinois.edu/cs225/sp2023/assets/notes/stack_heap_memory/memory_layout.png)
 
 The job of a memory allocator is to ask for some memory, and get a pointer in return, which points to an address on the heap.
 
-Since we cannot just randomly ask for spare space in the heap, we need to somehow keep track of what is allocated and what is free. This is done using a linked list of metadata headers, with the struct shown below. 
+Since we cannot just randomly ask for spare space in the heap, we need to somehow keep track of what is allocated and what is free. Otherwise, our allocator may return pointers on the heap, that overlap with previous allocations. This is done using a linked list of metadata headers, with the struct shown below. 
 We use the term `block` to describe some space in the heap.
 
 
@@ -37,18 +39,16 @@ struct header {
 };
 ```
 
-Block = Header + User Data.
+**Block = Header + User Data.**
 
-That way, we can represent our heap as a linked list, traverse it, and locate free or allocated blocks.
+Two extra variables are stored for the heap head and tail. That way, we can represent our heap as a linked list, traverse it, and locate free or allocated blocks.
 
 ## Allocate
 
 When we call allocate(size), `sbrk` is called under the hood. 
-This function first places a header on the heap, and then binds *size* bytes extra after the heap. Meaning that, sbrk 
-is called as `sbrk(size + sizeof(struct header))`. Allocating size for the header indeed introduces some memory overhead, but is
-essential for managing the heap.
+This function first places a header on the heap, and then binds *size* extra bytes on the heap. Meaning that, sbrk is called as `sbrk(size + sizeof(struct header))`. Allocating size for the header indeed introduces some memory overhead, but is essential for managing the heap.
 
-Memory alignment is an important feature embedded. We implement 8 byte alignment. All `struct header` pointers start at an address divisible by 8, and all sizes requested are aligned to the next nearest multiple of 8 (e.g., 7 becomes 8, 10 becomes 16 etc). That means that the payload of a block (the actual data) are padded up to the next multiple of 8 (causes a little bit of internal fragmentation).
+Memory alignment is an important feature embedded. We implement 8 byte alignment - as x86_64 linux suggests. All `struct header` pointers start at an address divisible by 8, and all sizes requested are aligned to the next nearest multiple of 8 (e.g., 7 becomes 8, 10 becomes 16 etc). This means that the payload of a block (the actual data) is **padded** up to the next multiple of 8 (causes a little bit of internal fragmentation).
 
 ![alt text](assets/mainempty.png)
 
@@ -60,7 +60,7 @@ The grey box denotes the header of the block. If we zoomed in the header it woul
 
 **Search algorithm**
 
-We need an algorithm to search and allocate blocks. In this branch, we do it using first fit.
+We need an algorithm to search and allocate blocks. In this code branch, we do it using first fit.
 - Alternatives: next fit & best fit (see branches implicit/next-fit and implicit/best-fit)
 
 In first fit algorithm, we traverse the headers one by one. If header says block is free, and has enough size, then allocate this block.
@@ -133,7 +133,7 @@ struct footer {
 };
 ```
 
-But do I always look for the footer? What is the previous block is allocated? In this case, the footer 'does not exist', it contains actual data being used. Due to alignment, just like the LSB marked 'is_free', the 2nd LSB is used to denote whether the previous block is free. When freeing a header, we `place_footer(header)` and `set_prev_allocation_status_free(header->next)`. The last function, sets the 2nd LSB of header.next, so that when we want to free header.next, we can check this specific bit. If set, we search for the footer and coalesce.
+But do I always look for the footer? What if the previous block is allocated? In this case, the footer 'does not exist', it contains actual data being used. Due to alignment, just like the LSB marked 'is_free', the 2nd LSB is used to denote whether the previous block is free. When freeing a header, we `place_footer(header)` and `set_prev_allocation_status_free(header->next)`. The last function, sets the 2nd LSB of header.next, so that when we want to free header.next, we can check this specific bit. If set, we search for the footer and coalesce.
 
 Summary of the `size` field of the header struct:
 
