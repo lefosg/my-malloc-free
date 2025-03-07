@@ -184,11 +184,7 @@ int coalesce_successor(header_t* header) {
             next->prev->next = NULL;
             newfree->prev = free_blk_root;
             newfree->next = free_blk_root->next;
-            print_free_header_info(free_blk_root);
-            print_free_header_info(newfree);
             free_blk_root->next = newfree;
-            print_free_header_info(free_blk_root);
-            print_free_header_info(newfree);
             if (prev_free)
                 newfree->size = newfree->size | 2;
             return 1;
