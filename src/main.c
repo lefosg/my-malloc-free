@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
     void* p3 = allocate(300);
     void* p4 = allocate(400);
     void* p5 = allocate(500);
-    void* p6 = allocate(100);
+    void* p6 = allocate(600);
     // void* p7 = allocate(100);
     // void* p8 = allocate(100);
     // void* p9 = allocate(100);
@@ -28,19 +28,13 @@ int main(int argc, char* argv[]) {
     // void* p18 = allocate(100);
     // void* p19 = allocate(100);
     // void* p20 = allocate(100);
-    print_heap();
-    free(p1);
     free(p2);
-    free(p3);
-    // free(p7);
+      print_free_list();
+
+    free(p1);
     print_free_list();
 
-    void* a = allocate(1000);
 
-    free(a);
     
-    a = allocate(900);
-    print_free_list();
-
     return 0;
 }

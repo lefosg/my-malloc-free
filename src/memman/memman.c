@@ -144,7 +144,7 @@ void free(void* ptr) {
     mark_block_free(tmp);
 
     free_blk_header_t* newfree = (free_blk_header_t*)tmp;
-    // coalesce_successor(tmp);
+    coalesce_successor(tmp);
     
     place_footer(tmp);
     set_prev_allocation_status_free(tmp);
@@ -165,45 +165,45 @@ void free(void* ptr) {
 
 void coalesce_successor(header_t* header) {
     free_blk_header_t* newfree = (free_blk_header_t*)header;
-    if (free_blk_root->next == NULL) { //if this is the first insertion
-        newfree->size = header->size;
-        free_blk_root->next = newfree;
-        newfree->prev = free_blk_root;
-        newfree->next = NULL;
+    if (free_blk_root->next == NULL)  //if this is the first insertion
         return;
-    }
+    
     //merge with next block    
-    header_t* next = (char*)header + header_size + get_block_size(header);
-    if (next && block_is_free(next)) { //&& header->next->is_free
+    free_blk_header_t* next = (char*)header + header_size + get_block_size(header);
+
+    if (next && block_is_free(next)) {
         mark_block_allocated(next);
         int prev_free = prev_block_is_free(header);
-        header->size = get_block_size(header) + get_block_size(header->next) + header_size; 
+
+        newfree->size = get_block_size(header) + get_block_size((header_t*)next) + header_size; 
         mark_block_free(header);  //deleteme after some checks (works without me)
 
-        free_blk_header_t* newfree = (free_blk_header_t*)header;
-        newfree->size = header->size;
-        newfree->next = free_blk_root->next;
+        //connect previous and next blocks together
+        next->prev->next = next->next;
+        next->next->prev = next->prev;
+        //connect new coalesced block to root
         newfree->prev = free_blk_root;
-        newfree->next->prev = newfree;
+        newfree->next = free_blk_root->next;
+
         if (prev_free)
-            header->size = header->size | 2;
+            newfree->size = newfree->size | 2;
             
-        if (header->next == heap_tail) {
-            heap_tail = header;
-            header->next=NULL;
-        } else {
-            header->next = header->next->next;
-        }
+        // if (newfree->next == heap_tail) {
+        //     heap_tail = header;
+        //     header->next=NULL;
+        // } else {
+        //     header->next = header->next->next;
+        // }
     }
     //check if can coalesce with previous
     // header_t* prev = search_prev_header(header);
     // if (prev && block_is_free(prev))  // && prev->is_free
     //     coalesce_successor(prev);
     // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce (MUCH faster)
-    else if (prev_block_is_free(header)) { //check if can coalesce with previous
-        header_t* prev = (((footer_t*)header)-1)->header;
-        coalesce_successor(prev);
-    }     
+    // else if (prev_block_is_free(header)) { //check if can coalesce with previous
+    //     header_t* prev = (((footer_t*)header)-1)->header;
+    //     coalesce_successor(prev);
+    // }     
 }
 
 header_t* search_prev_header(header_t* header) {
@@ -249,7 +249,7 @@ void print_header_info(header_t* header) {
 
 inline size_t get_block_size(header_t* header) {
     // return header->size & ~((1<<1)-1);
-    return header->size & ~15;  
+    return header->size & ~7;  
 }
 
 inline void mark_block_free(header_t* header) {
