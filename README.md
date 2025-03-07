@@ -1,12 +1,10 @@
 # My malloc/free
 
-## Description
+## Description - Explicit Free List (LIFO)
 
 Codebase is more or less the same as in main branch. 
 
-However, in this branch we have an explicit free list implementation. Instead of having our heap as one huge linked list and parse all of it whenever
-needed, we only parse the free blocks (there is not really a reason to parse allocated blocks). Instead of parsing #blocks, we parse #free_blocks.
-Still linear, but a huge optimization over implicit lists. 
+However, in this branch we have an explicit free list implementation. Instead of having our heap as one huge linked list and parse all of it whenever, we only parse the free blocks (there is not really a reason to parse allocated blocks). Instead of parsing #blocks, we parse #free_blocks. This can significantly decrease search times (still linear, but a huge optimization over implicit lists). 
 
 This is a FIFO explicit free list. Each time a new block is freed, it is placed at the start of the list.
 
@@ -18,7 +16,11 @@ Still, right now first fit is used (quick, but not memory optimal at all).
 
 **Splitting** is done to improve the aforementioned problem (need to spend a bit of time splitting..!).
 
-## Other strategy
+![alt text](assets/explicit.png)
+
+We create a pseudoblock which is called the *root* of free blocks. It has a size of 0, its *prev* block is set to NULL, and only points forward to the next free block. Iterations start from this block. 
+
+### Other strategy
 
 Treat this problem as a data structure problem. Could implement the whole header structure as a tree, e.g.:
 
@@ -33,4 +35,4 @@ struct free_blk_header {
 
 Trees have lower time complexity (O(logn)) in comparison to linked lists (O(n)).
 
-**NOTE**: coalescing needs fixing
+NOTE: this version does not coalesce with the previous block
