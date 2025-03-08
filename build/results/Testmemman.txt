@@ -1,0 +1,15 @@
+test/Testmemman.c:46:test_allocate_S:PASS
+test/Testmemman.c:47:test_alignment_8byte:PASS
+test/Testmemman.c:48:test_allocate_PTRDIFF_MAX_F:PASS
+
+====== PRINT HEADER INFO START ======
+Pointer: 0x571798f5b080
+Is Free Bit: 0
+Is Prev Free Bit: 0
+Size: 112
+====== PRINT HEADER INFO END ======
+test/Testmemman.c:49:test_allocate_size_aligned:PASS
+
+-----------------------
+4 Tests 0 Failures 0 Ignored 
+OK

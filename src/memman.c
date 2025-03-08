@@ -15,9 +15,9 @@ void* allocate(size_t size) {
     //check if heap already has some gap of requested size
     header_t* header;
     if (size < ALIGN_SIZE)
-        size = ALIGN_SIZE;
+        size = 2*ALIGN_SIZE;
     else   
-        size = ALIGN_SIZE * (int)((size + (ALIGN_SIZE-1)) / ALIGN_SIZE);
+        size = ALIGN_SIZE * (int)((size + ALIGN_SIZE + (ALIGN_SIZE-1)) / ALIGN_SIZE);
 	pthread_mutex_lock(&global_alloc_lock);
     header = first_fit_search(size);
     if (header) {
