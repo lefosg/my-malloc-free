@@ -117,16 +117,6 @@ void coalesce_successor(header_t* header) {
     }    
 }
 
-header_t* search_prev_header(header_t* header) {
-    if (header == heap_head || header == NULL)
-        return NULL;
-    for (header_t* curr = heap_head; curr != NULL; curr = curr->next) {
-        if (curr->next == header)
-            return curr;
-    }
-    return NULL;
-}
-
 void split_block(header_t* prev, size_t size) {
     //even when splitting, check if new header+some bytes fit
     //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free

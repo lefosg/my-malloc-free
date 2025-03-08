@@ -1,15 +1,22 @@
-test/Testmemman.c:46:test_allocate_S:PASS
-test/Testmemman.c:47:test_alignment_8byte:PASS
-test/Testmemman.c:48:test_allocate_PTRDIFF_MAX_F:PASS
-
-====== PRINT HEADER INFO START ======
-Pointer: 0x571798f5b080
-Is Free Bit: 0
-Is Prev Free Bit: 0
-Size: 112
-====== PRINT HEADER INFO END ======
-test/Testmemman.c:49:test_allocate_size_aligned:PASS
+test/Testmemman.c:270:test_allocate_S:PASS
+test/Testmemman.c:271:test_allocate_PTRDIFF_MAX_F:PASS
+test/Testmemman.c:272:test_allocate_size_aligned:PASS
+test/Testmemman.c:273:test_first_fit_S:PASS
+test/Testmemman.c:274:test_first_fit_F:PASS
+test/Testmemman.c:275:test_split:PASS
+test/Testmemman.c:279:test_free:PASS
+test/Testmemman.c:118:test_coalesce_next:FAIL: Expected NULL
+test/Testmemman.c:281:test_coalesce_previous:PASS
+test/Testmemman.c:285:test_get_block_size:PASS
+test/Testmemman.c:182:test_get_header_of_ptr:FAIL: Expected 112 Was 176
+test/Testmemman.c:288:test_mark_block_free:PASS
+test/Testmemman.c:289:test_mark_block_allocated:PASS
+test/Testmemman.c:290:test_block_is_free:PASS
+test/Testmemman.c:291:test_prev_block_is_free:PASS
+test/Testmemman.c:236:test_set_prev_allocation_status_free:FAIL: Expected TRUE Was FALSE
+test/Testmemman.c:293:test_set_prev_allocation_status_allocated:PASS
+test/Testmemman.c:261:test_place_footer:FAIL: Expected 100241450386048 Was 0
 
 -----------------------
-4 Tests 0 Failures 0 Ignored 
-OK
+18 Tests 4 Failures 0 Ignored 
+FAIL
