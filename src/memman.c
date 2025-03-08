@@ -77,17 +77,11 @@ void free(void* ptr) {
 
     //if all checks ok, mark free
     header_t* tmp = get_header_of_ptr(ptr);
-    // tmp->is_free = 1;
-    
-    //if needed, coalesce
-    
+        
     mark_block_free(tmp);
-
-
-    coalesce_successor(tmp);
-    // mark_block_free(tmp);
     place_footer(tmp);
     set_prev_allocation_status_free(tmp);
+    coalesce_successor(tmp);
 	pthread_mutex_unlock(&global_alloc_lock);
 }
 

@@ -15,7 +15,7 @@ test/Testmemman.c:290:test_block_is_free:PASS
 test/Testmemman.c:291:test_prev_block_is_free:PASS
 test/Testmemman.c:236:test_set_prev_allocation_status_free:FAIL: Expected TRUE Was FALSE
 test/Testmemman.c:293:test_set_prev_allocation_status_allocated:PASS
-test/Testmemman.c:261:test_place_footer:FAIL: Expected 100241450386048 Was 0
+test/Testmemman.c:261:test_place_footer:FAIL: Expected 106800769806976 Was 0
 
 -----------------------
 18 Tests 4 Failures 0 Ignored 
