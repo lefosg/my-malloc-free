@@ -13,14 +13,27 @@ Implementation of my own `allocate` and `free` functions for C. Uses ``sbrk`` fu
 | allocate(size_t size) | allocates <i>size</i> bytes in the heap | returns a void* pointer to an address on the heap, or NULL if operation fails |
 | free(void* ptr) | frees up the memory from a specified pointer | does not return anything |
 
-## Run
+## Project Structure & Execution
 
-Compile the library using the `make` command. The Makefile generates a .so file under the build/ directory to link the library to your own program (#include "memman.h"). There is also a `main.c` file which is for testing the allocator.
+For this project we use a Makefile for compiling and testing the code. Unity is the test framework for the project. Unity is added as a submodule in the version control.
 
-The script `run.sh` does everything for you, compiles and runs the program you wrote.
+Compile the library using the `make` command. The Makefile generates some files under the build/ directory. The .o files are placed under build/objs. The build/results directory contains the output (stdout) of the tests. With `make test` you can only run the tests. 
 
-Under the `src` folder there is main.c and memman folder where the library resides. 
+The script `run.sh` does everything for you, compiles and runs the program you wrote in main.c.
+
+Under the `src` folder there is main.c and memman.h and memman.c files which comprise the library. 
 The main.c file is just for testing the API.
+
+To run:
+
+```bash
+git clone https://github.com/lefosg/my-malloc-free.git
+cd my-malloc-free
+git submodule init && git submodule update --recursive #this downloads unity
+./run.sh #calls make and runs the executable
+```
+
+**Important note for testing:** if you want to write your own tests, just because every test in the testfile uses the same heap, you need to ensure consistency across unit tests. This means that, if in one test you call `allocate` a few times, and then `free`, and in the next test you call `allocate` again, the last allocate call will find a free block which was free'd from the previous test. That's why, in some tests - to ensure consistency, integrity, and atomicity of each test - we annotate with **heap reset** some allocation commands which correct the state of the heap.
 
 ## Implementation specifics
 
