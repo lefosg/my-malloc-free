@@ -5,6 +5,7 @@ size_t header_size = sizeof(header_t);
 size_t footer_size = sizeof(footer_t);
 pthread_mutex_t global_alloc_lock;
 
+// ================= ALLOCATE =================
 
 void* allocate(size_t size) {
     if (size == 0 || size >= __PTRDIFF_MAX__) {
@@ -15,13 +16,12 @@ void* allocate(size_t size) {
     //check if heap already has some gap of requested size
     header_t* header;
     if (size < ALIGN_SIZE)
-        size = 2*ALIGN_SIZE;
+        size = ALIGN_SIZE;
     else   
-        size = ALIGN_SIZE * (int)((size + ALIGN_SIZE + (ALIGN_SIZE-1)) / ALIGN_SIZE);
+        size = ALIGN_SIZE * (int)((size + (ALIGN_SIZE-1)) / ALIGN_SIZE);
 	pthread_mutex_lock(&global_alloc_lock);
     header = first_fit_search(size);
     if (header) {
-        // header->is_free = 0;
         mark_block_allocated(header);
         //check if needed to split the block
         split_block(header, size);
@@ -36,6 +36,7 @@ void* allocate(size_t size) {
 }
 
 void* extend_heap(size_t size) {
+    
     void* ptr = sbrk(size+header_size);
     if (ptr == (void*)-1) {
         errno = ENOMEM;
@@ -45,8 +46,8 @@ void* extend_heap(size_t size) {
 
     header_t* header = (header_t*)ptr;
     header->size=size;
-    // header->is_free=0;
     mark_block_allocated(header);
+
     header->next=NULL;
 
     ptr += header_size;
@@ -65,52 +66,6 @@ void* extend_heap(size_t size) {
     return ptr;
 }
 
-void free(void* ptr) {
-    if (!ptr)
-        return;
-        
-    pthread_mutex_lock(&global_alloc_lock);
-    // is this pointer valid? was it malloc'd?  
-    if (ptr < (void*)heap_head || ptr > (void*)(heap_tail+1)){
-        return;
-    }
-
-    //if all checks ok, mark free
-    header_t* tmp = get_header_of_ptr(ptr);
-        
-    mark_block_free(tmp);
-    place_footer(tmp);
-    set_prev_allocation_status_free(tmp);
-    coalesce_successor(tmp);
-	pthread_mutex_unlock(&global_alloc_lock);
-}
-
-void coalesce_successor(header_t* header) {
-    //merge with next block    
-    if (header->next && block_is_free(header->next)) { //&& header->next->is_free
-        // header->next->is_free = 0;
-        mark_block_allocated(header->next);
-        int prev_free = prev_block_is_free(header);
-        header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
-        mark_block_free(header);
-        if (prev_free)
-            header->size = header->size | 2;
-            
-        if (header->next == heap_tail) {
-            heap_tail = header;
-            header->next=NULL;
-        } else {
-            header->next = header->next->next;
-        }
-    }
-    // check if can coalesce with previous
-    // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce (MUCH faster)
-    if (prev_block_is_free(header)) {
-        header_t* prev = (((footer_t*)header)-1)->header;
-        coalesce_successor(prev);
-    }    
-}
-
 void split_block(header_t* prev, size_t size) {
     //even when splitting, check if new header+some bytes fit
     //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
@@ -127,9 +82,7 @@ void split_block(header_t* prev, size_t size) {
     tmp = tmp + header_size + size;
     newblk = (header_t*)tmp;
 
-
     newblk->next = prev->next;
-    // newblk->is_free = 1;
     newblk->size = get_block_size(prev) - size - header_size; //prev->size
     mark_block_free(newblk);
     
@@ -155,6 +108,57 @@ header_t* first_fit_search(size_t size) {
     return NULL;
 }
 
+// ================= FREE =================
+
+void free(void* ptr) {
+    if (!ptr)
+        return;
+        
+    pthread_mutex_lock(&global_alloc_lock);
+    // is this pointer valid? was it malloc'd?  
+    if (ptr < (void*)heap_head || ptr > (void*)(heap_tail+1)){
+        return;
+    }
+
+    //if all checks ok, mark free
+    header_t* tmp = get_header_of_ptr(ptr);
+    mark_block_free(tmp);
+    set_prev_allocation_status_free(tmp);
+    coalesce_successor(tmp);
+    place_footer(tmp);    
+	pthread_mutex_unlock(&global_alloc_lock);
+}
+
+void coalesce_successor(header_t* header) {
+    //merge with next block    
+    if (header->next && block_is_free(header->next)) { //&& header->next->is_free
+        merge_blocks(header);
+    }
+    // check if can coalesce with previous
+    // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce (MUCH faster)
+    if (prev_block_is_free(header)) {
+        header_t* prev = (((footer_t*)header)-1)->header;
+        merge_blocks(prev);
+    }    
+}
+
+void merge_blocks(header_t* header) {
+    mark_block_allocated(header->next);
+    int prev_free = prev_block_is_free(header);
+    header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
+    mark_block_free(header);
+    if (prev_free)
+        header->size = header->size | 2;
+        
+    if (header->next == heap_tail) {
+        heap_tail = header;
+        header->next=NULL;
+    } else {
+        header->next = header->next->next;
+    }
+}
+
+// ================= HELPER FUNCTIONS =================
 
 void print_heap(void) {
     printf("\n====== PRINT HEAP START ======\n");
@@ -186,7 +190,7 @@ void print_header_info(header_t* header) {
 
 inline size_t get_block_size(header_t* header) {
     // return header->size & ~((1<<1)-1);
-    return header->size & ~15;  
+    return header->size & ~7;  
 }
 
 inline void mark_block_free(header_t* header) {
@@ -219,11 +223,11 @@ inline int prev_block_is_free(header_t* header) {
 }
 
 void place_footer(header_t* header) {
-    char* tmp = (char*)(header) + get_block_size(header) + header_size - footer_size;
+    char* tmp = (char*)(header) + header_size + get_block_size(header) - footer_size;
     footer_t* footer = (footer_t*)tmp;
     footer->header = header;
 }
 
 footer_t* get_footer(header_t* header) {
-    return ((footer_t*)(header + get_block_size(header) + header_size - footer_size));
+    return ((footer_t*)((char*)header + get_block_size(header) + header_size - footer_size));
 }

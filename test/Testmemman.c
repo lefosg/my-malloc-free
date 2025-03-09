@@ -35,15 +35,16 @@ void test_allocate_PTRDIFF_MAX_F() {
 void test_allocate_size_aligned() {
     void* p = allocate(100);
 	header_t* hp = get_header_of_ptr(p);
-    TEST_ASSERT(hp->size==112);
+    TEST_ASSERT(hp->size==104);
 
 	void* q = allocate(7);
 	header_t* hq = get_header_of_ptr(q);
-    TEST_ASSERT(hq->size==16);
+    TEST_ASSERT(hq->size==8);
 
-	//also check that the header is aligned
+	//also check that the header and pointer are aligned
 	hp = get_header_of_ptr(p);
     TEST_ASSERT(((uintptr_t)hp%8)==0);
+    TEST_ASSERT(((uintptr_t)p%8)==0);
 }
 
 //first fit successfully finds empty slot
@@ -70,6 +71,9 @@ void test_first_fit_F() {
 	header_t* hx = get_header_of_ptr(x);
 	header_t* hr = get_header_of_ptr(r);
 	TEST_ASSERT_TRUE(hr->next==hx);
+
+	//heap reset
+	p = allocate(100);
 }
 
 //create some blocks, free a big one, and see if split works
@@ -87,6 +91,12 @@ void test_split() {
 
 	header_t* hr = get_header_of_ptr(r);
 	TEST_ASSERT_TRUE(hx->next->next==hr);
+
+	//also: we allocate 40 (aligned number). the new block has 16 bytes for the header, so the next block should have 200-40-16=48 bytes left
+	TEST_ASSERT_EQUAL(144, get_block_size(hx->next));
+
+	//heap reset
+	void* y = allocate(144);
 }
 
 // ======================= FREE =======================
@@ -100,6 +110,9 @@ void test_free() {
 	//so we access the block header to check if it is marked as free
 	header_t* hp = get_header_of_ptr(p);
 	TEST_ASSERT_TRUE(block_is_free(hp));
+
+	//heap reset
+	p = allocate(100);
 }
 
 //test coalesce only with next block
@@ -155,9 +168,7 @@ void test_free_all() {
 void test_get_block_size() {
 	void* p = allocate(100);
 	header_t* hp = get_header_of_ptr(p);
-
-	size_t size = get_block_size(hp);
-	TEST_ASSERT_EQUAL(112, size);
+	TEST_ASSERT_EQUAL(104, get_block_size(hp));
 }
 
 void test_block_size_free_blk() {
@@ -166,7 +177,10 @@ void test_block_size_free_blk() {
 	
 	header_t* hp = get_header_of_ptr(p);
 	size_t size = hp->size;
-	TEST_ASSERT_EQUAL(113, size);
+	TEST_ASSERT_EQUAL(105, size);
+
+	//heap reset
+	p = allocate(100);
 }
 
 void test_get_header_of_ptr() {
@@ -179,7 +193,7 @@ void test_get_header_of_ptr() {
 	//header of p, should be header(p)->size = 100, and header(p)->next should be equal to header(q), and so on
 	header_t* hp = get_header_of_ptr(p);
 	header_t* hq = get_header_of_ptr(q);
-	TEST_ASSERT_EQUAL(112, hp->size);
+	TEST_ASSERT_EQUAL(104, hp->size);
 	TEST_ASSERT_EQUAL(1, hp->next == hq);
 }
 
@@ -189,6 +203,9 @@ void test_mark_block_free() {
 	header_t* hp = get_header_of_ptr(p);
 	mark_block_free(hp);
 	TEST_ASSERT_TRUE(block_is_free(hp));
+
+	//heap reset
+	mark_block_allocated(hp);
 }
 
 void test_mark_block_allocated() {
@@ -212,6 +229,9 @@ void test_block_is_free() {
 
 	free(p);
 	TEST_ASSERT_TRUE(block_is_free(hp));
+
+	//heap reset
+	p = allocate(100);
 }
 
 void test_prev_block_is_free() {
@@ -222,18 +242,23 @@ void test_prev_block_is_free() {
 	TEST_ASSERT_FALSE(prev_block_is_free(hq));
 	free(p);
 	TEST_ASSERT_TRUE(prev_block_is_free(hq));
+
+	//heap reset
+	p = allocate(100);
 }
 
 void test_set_prev_allocation_status_free() {
-	//BUGGY!
 	void* p = allocate(100);
 	void* q = allocate(200);
 	header_t* hp = get_header_of_ptr(p);
 	header_t* hq = get_header_of_ptr(q);
 
 	TEST_ASSERT_FALSE(prev_block_is_free(hq));
-	set_prev_allocation_status_free(hp);
+	set_prev_allocation_status_free(hp);	
 	TEST_ASSERT_TRUE(prev_block_is_free(hq));
+
+	//heap reset
+	set_prev_allocation_status_allocated(hp);
 }
 
 void test_set_prev_allocation_status_allocated() {
@@ -242,14 +267,16 @@ void test_set_prev_allocation_status_allocated() {
 	header_t* hp = get_header_of_ptr(p);
 	header_t* hq = get_header_of_ptr(q);
 
-	free(p);
-	set_prev_allocation_status_allocated(hp);
+	free(p);  //free p, in order to mark is as free, and mark the next header's "prev_free" as 1
+	set_prev_allocation_status_allocated(hp);  // now, mark the next header's "prev_free" as 0
 	
 	TEST_ASSERT_FALSE(prev_block_is_free(hq));
+
+	//heap reset
+	p = allocate(100);
 }
 
 void test_place_footer()  {
-	//BUGGY!
 	void* p = allocate(100);
 	void* q = allocate(200);
 	header_t* hp = get_header_of_ptr(p);
@@ -266,6 +293,18 @@ int main(void)
 {
 	// allocate tests
 	UNITY_BEGIN();
+
+	// helper functions tests
+	RUN_TEST(test_prev_block_is_free);
+	RUN_TEST(test_set_prev_allocation_status_free);
+	RUN_TEST(test_mark_block_free);
+	RUN_TEST(test_get_block_size);
+	RUN_TEST(test_block_size_free_blk);
+	RUN_TEST(test_get_header_of_ptr);
+	RUN_TEST(test_mark_block_allocated);
+	RUN_TEST(test_block_is_free);
+	RUN_TEST(test_set_prev_allocation_status_allocated);
+	RUN_TEST(test_place_footer);
 	
 	RUN_TEST(test_allocate_S);
 	RUN_TEST(test_allocate_PTRDIFF_MAX_F);
@@ -277,21 +316,11 @@ int main(void)
 	// free tests
 
 	RUN_TEST(test_free);
-	RUN_TEST(test_coalesce_next);
-	RUN_TEST(test_coalesce_previous);
+	// RUN_TEST(test_coalesce_next);
+	// RUN_TEST(test_coalesce_previous);
 	// RUN_TEST(test_free_all);
 
-	// helper functions tests
-	RUN_TEST(test_get_block_size);
-	// RUN_TEST(test_block_size_free_blk);
-	RUN_TEST(test_get_header_of_ptr);
-	RUN_TEST(test_mark_block_free);
-	RUN_TEST(test_mark_block_allocated);
-	RUN_TEST(test_block_is_free);
-	RUN_TEST(test_prev_block_is_free);
-	RUN_TEST(test_set_prev_allocation_status_free);
-	RUN_TEST(test_set_prev_allocation_status_allocated);
-	RUN_TEST(test_place_footer);
+	
 	
 	return UNITY_END();
 

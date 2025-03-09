@@ -15,7 +15,6 @@ typedef struct footer footer_t;
 */
 struct header {
     size_t size;
-    // int is_free;
     struct header* next;
 };
 
