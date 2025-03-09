@@ -4,7 +4,7 @@
 #include <errno.h>
 
 #define SPLIT_TOL 0.4
-#define ALIGN_SIZE 16
+#define ALIGN_SIZE 8
 
 typedef struct header header_t;
 
@@ -112,7 +112,7 @@ void mark_block_free(header_t* header);
  * Set the last bit of the size_t size property of a header to 0, meaning the block is not free aka occupied
  * @param header header
  */
-void mark_block_occupied(header_t* header);
+void mark_block_allocated(header_t* header);
 
 /**
  * Because the last bit of the size_t size property in the header has its last bit set to signal
