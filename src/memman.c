@@ -125,7 +125,7 @@ void free(void* ptr) {
     mark_block_free(tmp);
     set_prev_allocation_status_free(tmp);
     coalesce_successor(tmp);
-    place_footer(tmp);    
+    // place_footer(tmp);    
 	pthread_mutex_unlock(&global_alloc_lock);
 }
 
@@ -134,11 +134,13 @@ void coalesce_successor(header_t* header) {
     if (header->next && block_is_free(header->next)) { //&& header->next->is_free
         merge_blocks(header);
     }
+    place_footer(header);
     // check if can coalesce with previous
-    // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce (MUCH faster)
+    // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce
     if (prev_block_is_free(header)) {
         header_t* prev = (((footer_t*)header)-1)->header;
         merge_blocks(prev);
+        place_footer(prev);
     }    
 }
 

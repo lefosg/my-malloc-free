@@ -117,7 +117,6 @@ void test_free() {
 
 //test coalesce only with next block
 void test_coalesce_next() {
-	//BUGGY!
 	void* p = allocate(100);
     void* q = allocate(200);
     void* r = allocate(300);
@@ -130,6 +129,12 @@ void test_coalesce_next() {
 
 	TEST_ASSERT_NULL(hp->next->next);
 	TEST_ASSERT_TRUE(block_is_free(hp->next));
+
+	//size of new free block should be 200+304+16=520
+	TEST_ASSERT_EQUAL(520, get_block_size(hp->next));	
+
+	//heap reset
+	q = allocate(520);
 }
 
 //test coalesce only with previous block, same checks apply with the previous test, but the order of free's is different
@@ -146,9 +151,41 @@ void test_coalesce_previous() {
 
 	TEST_ASSERT_TRUE(block_is_free(hp->next));
 	TEST_ASSERT_NULL(hp->next->next);
+
+	//size of new free block should be again 200+304+16=520
+	TEST_ASSERT_EQUAL(520, get_block_size(hp->next));	
+
+	//heap reset
+	q = allocate(520);
 }
 
 //free all pointers to the heap -> should be left with one free block
+void test_free_middle() {
+	void* p = allocate(100);
+    void* q = allocate(200);
+    void* r = allocate(300);
+    void* x = allocate(400);
+
+	free(p);
+	free(r);
+
+	free(q);
+
+	header_t* hp = get_header_of_ptr(p);
+	header_t* hx = get_header_of_ptr(x);
+	//there should be two blocks now, one free (p+q+r), and one allocated (x)
+	//size of free block should be 104+200+204+16+16=640 
+	TEST_ASSERT_TRUE(block_is_free(hp));
+	TEST_ASSERT_EQUAL(hx, hp->next);
+	TEST_ASSERT_EQUAL(640, get_block_size(hp));
+
+	//heap reset
+	p = allocate(100);
+	q = allocate(200);
+	r = allocate(300);
+	x = allocate(400);
+}
+
 void test_free_all() {
 	void* p = allocate(100);
     void* q = allocate(200);
@@ -158,10 +195,18 @@ void test_free_all() {
 	free(q);
 	free(r);
 
+	// the reason why this works is because data is still left intact on the heap, thus, accessible
+	// it's bad practice and you must not access data after free'd, here we only do it for testing the allocator 
 	header_t* hp = get_header_of_ptr(p);
 	TEST_ASSERT_TRUE(block_is_free(hp));
 	TEST_ASSERT_NULL(hp->next);
+
+	//heap reset
+	p = allocate(100);
+	q = allocate(200);
+	r = allocate(300);
 }
+
 
 // ======================= HELPER FUNCTIONS =======================
 
@@ -306,6 +351,7 @@ int main(void)
 	RUN_TEST(test_set_prev_allocation_status_allocated);
 	RUN_TEST(test_place_footer);
 	
+	// allocate tests
 	RUN_TEST(test_allocate_S);
 	RUN_TEST(test_allocate_PTRDIFF_MAX_F);
 	RUN_TEST(test_allocate_size_aligned);
@@ -314,11 +360,11 @@ int main(void)
 	RUN_TEST(test_split);
 	
 	// free tests
-
 	RUN_TEST(test_free);
-	// RUN_TEST(test_coalesce_next);
-	// RUN_TEST(test_coalesce_previous);
-	// RUN_TEST(test_free_all);
+	RUN_TEST(test_coalesce_next);
+	RUN_TEST(test_coalesce_previous);
+	RUN_TEST(test_free_middle);
+	RUN_TEST(test_free_all);
 
 	
 	

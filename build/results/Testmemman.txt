@@ -1,21 +1,25 @@
-test/Testmemman.c:299:test_prev_block_is_free:PASS
-test/Testmemman.c:300:test_set_prev_allocation_status_free:PASS
-test/Testmemman.c:301:test_mark_block_free:PASS
-test/Testmemman.c:302:test_get_block_size:PASS
-test/Testmemman.c:303:test_block_size_free_blk:PASS
-test/Testmemman.c:304:test_get_header_of_ptr:PASS
-test/Testmemman.c:305:test_mark_block_allocated:PASS
-test/Testmemman.c:306:test_block_is_free:PASS
-test/Testmemman.c:307:test_set_prev_allocation_status_allocated:PASS
-test/Testmemman.c:308:test_place_footer:PASS
-test/Testmemman.c:310:test_allocate_S:PASS
-test/Testmemman.c:311:test_allocate_PTRDIFF_MAX_F:PASS
-test/Testmemman.c:312:test_allocate_size_aligned:PASS
-test/Testmemman.c:313:test_first_fit_S:PASS
-test/Testmemman.c:314:test_first_fit_F:PASS
-test/Testmemman.c:315:test_split:PASS
-test/Testmemman.c:319:test_free:PASS
+test/Testmemman.c:343:test_prev_block_is_free:PASS
+test/Testmemman.c:344:test_set_prev_allocation_status_free:PASS
+test/Testmemman.c:345:test_mark_block_free:PASS
+test/Testmemman.c:346:test_get_block_size:PASS
+test/Testmemman.c:347:test_block_size_free_blk:PASS
+test/Testmemman.c:348:test_get_header_of_ptr:PASS
+test/Testmemman.c:349:test_mark_block_allocated:PASS
+test/Testmemman.c:350:test_block_is_free:PASS
+test/Testmemman.c:351:test_set_prev_allocation_status_allocated:PASS
+test/Testmemman.c:352:test_place_footer:PASS
+test/Testmemman.c:355:test_allocate_S:PASS
+test/Testmemman.c:356:test_allocate_PTRDIFF_MAX_F:PASS
+test/Testmemman.c:357:test_allocate_size_aligned:PASS
+test/Testmemman.c:358:test_first_fit_S:PASS
+test/Testmemman.c:359:test_first_fit_F:PASS
+test/Testmemman.c:360:test_split:PASS
+test/Testmemman.c:363:test_free:PASS
+test/Testmemman.c:364:test_coalesce_next:PASS
+test/Testmemman.c:365:test_coalesce_previous:PASS
+test/Testmemman.c:366:test_free_middle:PASS
+test/Testmemman.c:367:test_free_all:PASS
 
 -----------------------
-17 Tests 0 Failures 0 Ignored 
+21 Tests 0 Failures 0 Ignored 
 OK
