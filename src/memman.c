@@ -1,7 +1,10 @@
 #include "memman.h"
 
 header_t *heap_head, *heap_tail;
+
 size_t header_size = sizeof(header_t); 
+size_t footer_size = sizeof(footer_t);
+
 pthread_mutex_t global_alloc_lock;
 
 
@@ -20,11 +23,11 @@ void* allocate(size_t size) {
     else   
         size = ALIGN_SIZE * (int)((size + (ALIGN_SIZE-1)) / ALIGN_SIZE);
 	pthread_mutex_lock(&global_alloc_lock);
-    // header = first_fit_search(size);
     header = best_fit_search(size);
 
     if (header) {
         // header->is_free = 0;
+        mark_block_allocated(header);
         mark_block_allocated(header);
         //check if needed to split the block
         split_block(header, size);
@@ -50,6 +53,7 @@ void* extend_heap(size_t size) {
     header->size=size;
     // header->is_free=0;
     mark_block_allocated(header);
+    mark_block_allocated(header);
     header->next=NULL;
 
     ptr += header_size;
@@ -60,6 +64,8 @@ void* extend_heap(size_t size) {
     //when extending, old tail should point to current new header
     if (heap_tail) {
         heap_tail->next = header;
+        if (block_is_free(heap_tail))
+            set_prev_allocation_status_free(heap_tail);
     }
     //new tail is this header after extending
     heap_tail = header;
@@ -100,6 +106,7 @@ void split_block(header_t* prev, size_t size) {
     //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
     long tolerance = get_block_size(prev) * SPLIT_TOL;  //prev->size * SPLIT_TOL
     if ((long)(get_block_size(prev) - size - header_size) <= tolerance) { //prev->size - ...
+        set_prev_allocation_status_allocated(prev);
         return;
     }
 
@@ -117,6 +124,9 @@ void split_block(header_t* prev, size_t size) {
     
     prev->next=newblk;
     prev->size=size;
+
+    set_prev_allocation_status_free(newblk);
+    place_footer(newblk);
 }
 
 
@@ -167,8 +177,10 @@ void print_heap(void) {
     printf("\n====== PRINT HEAP START ======\n");
     int heap_len=0;
     for (header_t* header = heap_head; header != NULL; header = header->next) {
+        printf("\t Block: %d\n", heap_len+1);
         printf("Header address: %p\n", header);
         printf("Is Free: %u\n", block_is_free(header));
+        printf("Is Prev Free Bit: %u\n", prev_block_is_free(header));
         printf("Size: %ld\n", get_block_size(header));
         heap_len++;
     }
@@ -183,7 +195,8 @@ inline header_t* get_header_of_ptr(void* ptr) {
 void print_header_info(header_t* header) {
     printf("\n====== PRINT HEADER INFO START ======\n");
     printf("Pointer: %p\n", header);
-    printf("Is Free: %u\n", block_is_free(header));
+    printf("Is Free Bit: %u\n", block_is_free(header));
+    printf("Is Prev Free Bit: %u\n", prev_block_is_free(header));
     printf("Size: %ld\n", get_block_size(header));
     printf("====== PRINT HEADER INFO END ======\n");
 }
@@ -194,6 +207,7 @@ inline size_t get_block_size(header_t* header) {
 
 inline void mark_block_free(header_t* header) {
     header->size |= 1;
+    header->size |= 1;
 }
 
 inline void mark_block_allocated(header_t* header) {
@@ -202,4 +216,30 @@ inline void mark_block_allocated(header_t* header) {
 
 inline int block_is_free(header_t* header) {
     return header->size & 1;  // Returns 1 if last bit is 1, 0 if last bit is 0
+}
+
+inline void set_prev_allocation_status_free(header_t* header) {
+    if (header->next) {
+        header->next->size = header->next->size | 2;
+    }
+}
+
+inline void set_prev_allocation_status_allocated(header_t* header) {
+    if (header->next)
+        header->next->size = header->next->size & ~2;
+}
+
+inline int prev_block_is_free(header_t* header) {
+    size_t x = (header->size & 2);
+    return x>>1;  // Returns 1 if last bit is 1, 0 if last bit is 0
+}
+
+void place_footer(header_t* header) {
+    char* tmp = (char*)(header) + get_block_size(header) + header_size - footer_size;
+    footer_t* footer = (footer_t*)tmp;
+    footer->header = header;
+}
+
+footer_t* get_footer(header_t* header) {
+    return ((footer_t*)(header + get_block_size(header) + header_size - footer_size));
 }
