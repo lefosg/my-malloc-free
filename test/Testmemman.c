@@ -225,12 +225,40 @@ void test_free_all() {
 void test_free_mmaped() {
 	void* p = allocate(100);
 	void* q = allocate(129*1024);
+	void* r = allocate(129*1024);
 
 	free(q);
 	header_t* hp = get_header_of_ptr(p);
 
 	TEST_ASSERT_FALSE(header_is_mmaped(hp->next));
 	TEST_ASSERT_TRUE(block_is_free(hp->next));
+
+	free(r);
+	TEST_ASSERT_TRUE(block_is_free(hp->next));
+	TEST_ASSERT_EQUAL(48, get_block_size(hp->next));
+	
+	//heap reset
+	q = allocate(129*1024);
+	r = allocate(129*1024);
+}
+
+void test_free_mmaped_split_blk() {
+	void* p = allocate(100);
+    void* q = allocate(200);
+    void* r = allocate(300);
+    void* x = allocate(400);
+
+	header_t* hp = get_header_of_ptr(p);
+	free(p);
+
+	void* b = allocate(129*1024); //due to first fit, allocator should split p into two blocks
+	TEST_ASSERT_TRUE(block_is_free(hp->next));
+	TEST_ASSERT_FALSE(block_is_free(hp->next->next));
+	//length of the new block should be 104-32=72
+	TEST_ASSERT_EQUAL(72, get_block_size(hp->next));
+	
+	//heap reset
+	p = allocate(72);
 }
 
 
@@ -424,7 +452,7 @@ int main(void)
 	RUN_TEST(test_free_middle);
 	RUN_TEST(test_free_all);
 	RUN_TEST(test_free_mmaped);
-
+	RUN_TEST(test_free_mmaped_split_blk);
 	
 	
 	return UNITY_END();
