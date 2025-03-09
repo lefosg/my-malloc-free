@@ -17,7 +17,14 @@ Implementation of my own `allocate` and `free` functions for C. Uses ``sbrk`` fu
 
 For this project we use a Makefile for compiling and testing the code. Unity is the test framework for the project. Unity is added as a submodule in the version control.
 
-Compile the library using the `make` command. The Makefile generates some files under the build/ directory. The .o files are placed under build/objs. The build/results directory contains the output (stdout) of the tests. With `make test` you can only run the tests. 
+Folders:
+- `assets` - images for the readme file
+- `build` - output of the `make` command
+- `src` - library source code
+- `test` - unit tests for the library
+- `Unity` unity submodule folder
+
+Compile the library using the `make` command. The Makefile generates some files under the build/ directory. The .o files are placed under build/objs. The build/results directory contains the output (stdout) of the tests. With `make test` you can only run the tests. Makefile was taken and modified from this [source](https://github.com/kasramp/c-unit-testing).
 
 The script `run.sh` does everything for you, compiles and runs the program you wrote in main.c.
 
