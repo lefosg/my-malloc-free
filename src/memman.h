@@ -81,17 +81,19 @@ void split_block(header_t* prev, size_t size);
 
 /**
  * Called by free. It checks if the next header is an empty block. If it is,
- * it coalesces (merges) the two blocks into one
+ * it coalesces (merges) the two blocks into one. It marks the block as free, 
+ * and places a footer/boundary tag on the end of the block.
  * @param header pointer to the current header (trying to coalesce with the next)
- * @returns a pointer to the new header. If coalesced, header should be different. If not coalesced,
- * it returns the initial header.
+ * @returns nothing. If coalesced, headers should be different. If not coalesced,
+ * nothing should be changed, only the footers.
  * 
- * Some thoughts: need to coalesce with prev and next neighbours? Easy to find next. Options for previous:
- * Search from the start -> slow (Currently implemented!)
- * If a previous search has been done, keep pass in the prev pointer as param as well
- * Double link the list
 */
 void coalesce_successor(header_t* header);
+
+/**
+ * Does the actual merging. Is called inside coalesce_successor function
+ */
+void merge_blocks(header_t* header);
 
 /**
  * Returns the previous block header. Serial search from head to given one.
@@ -127,7 +129,7 @@ void mark_block_free(header_t* header);
  * Set the last bit of the size_t size property of a header to 0, meaning the block is not free aka occupied
  * @param header header
  */
-void mark_block_occupied(header_t* header);
+void mark_block_allocated(header_t* header);
 
 /**
  * Because the last bit of the size_t size property in the header has its last bit set to signal

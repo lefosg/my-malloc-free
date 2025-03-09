@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include "memman/memman.h"
+#include "memman.h"
 
 
 int main(int argc, char* argv[]) {

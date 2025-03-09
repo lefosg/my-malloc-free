@@ -28,7 +28,7 @@ void* allocate(size_t size) {
 
     if (header) {
         // header->is_free = 0;
-        mark_block_occupied(header);
+        mark_block_allocated(header);
         //check if needed to split the block
         split_block(header, size);
 		pthread_mutex_unlock(&global_alloc_lock);
@@ -52,7 +52,7 @@ void* extend_heap(size_t size) {
     header_t* header = (header_t*)ptr;
     header->size=size;
     // header->is_free=0;
-    mark_block_occupied(header);
+    mark_block_allocated(header);
     header->next=NULL;
 
     ptr += header_size;
@@ -161,45 +161,41 @@ void free(void* ptr) {
     if (ptr < (void*)heap_head || ptr > (void*)(heap_tail+1)){
         return;
     }
-    // was it malloc'd?
-
-
-    //if all checks ok, mark free
     header_t* tmp = get_header_of_ptr(ptr);
-    // tmp->is_free = 1;
-    
-    //if needed, coalesce
     mark_block_free(tmp);
-    coalesce_successor(tmp);
-    // mark_block_free(tmp);
-    place_footer(tmp);
     set_prev_allocation_status_free(tmp);
+    coalesce_successor(tmp);
 	pthread_mutex_unlock(&global_alloc_lock);
 }
 
 void coalesce_successor(header_t* header) {
     //merge with next block    
     if (header->next && block_is_free(header->next)) { //&& header->next->is_free
-        // header->next->is_free = 0;
-        mark_block_occupied(header->next);
-        int prev_free = prev_block_is_free(header);
-        header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
-        mark_block_free(header);
-        if (prev_free)
-            header->size = header->size | 2;
-        
-        if (header->next == heap_tail) {
-                heap_tail = header;
-                header->next=NULL;
-        } else {
-            header->next = header->next->next;
-        }
+        merge_blocks(header);
     }
+    place_footer(header);
     //check if can coalesce with previous
     if (prev_block_is_free(header)) {
         header_t* prev = (((footer_t*)header)-1)->header;
-        coalesce_successor(prev);
+        merge_blocks(prev);
+        place_footer(prev);
     }  
+}
+
+void merge_blocks(header_t* header) {
+    mark_block_allocated(header->next);
+    int prev_free = prev_block_is_free(header);
+    header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
+    mark_block_free(header);
+    if (prev_free)
+        header->size = header->size | 2;
+    
+    if (header->next == heap_tail) {
+            heap_tail = header;
+            header->next=NULL;
+    } else {
+        header->next = header->next->next;
+    }
 }
 
 // ================= HELPER FUNCTIONS =================
@@ -233,15 +229,14 @@ void print_header_info(header_t* header) {
 }
 
 inline size_t get_block_size(header_t* header) {
-    // return header->size & ~((1<<1)-1);
-    return header->size & ~15;  
+    return header->size & ~7;  
 }
 
 inline void mark_block_free(header_t* header) {
     header->size |= 1;
 }
 
-inline void mark_block_occupied(header_t* header) {
+inline void mark_block_allocated(header_t* header) {
     header->size &= ~1;
 }
 
@@ -267,11 +262,11 @@ inline int prev_block_is_free(header_t* header) {
 }
 
 void place_footer(header_t* header) {
-    char* tmp = (char*)(header) + get_block_size(header) + header_size - footer_size;
+    char* tmp = (char*)(header) + header_size + get_block_size(header) - footer_size;
     footer_t* footer = (footer_t*)tmp;
     footer->header = header;
 }
 
 footer_t* get_footer(header_t* header) {
-    return ((footer_t*)(header + get_block_size(header) + header_size - footer_size));
+    return ((footer_t*)((char*)header + get_block_size(header) + header_size - footer_size));
 }
