@@ -19,12 +19,13 @@ void* allocate(size_t size) {
         return NULL;
     }
 
-    //check if heap already has some gap of requested size
+    //align the size to next multiple of ALIGN_SIZE
     if (size < ALIGN_SIZE)
         size = ALIGN_SIZE;
     else   
-        size = ALIGN_SIZE * (int)((size + ALIGN_SIZE + (ALIGN_SIZE-1)) / ALIGN_SIZE);
-	pthread_mutex_lock(&global_alloc_lock);
+        size = ALIGN_SIZE * (int)((size + (ALIGN_SIZE-1)) / ALIGN_SIZE);
+        pthread_mutex_lock(&global_alloc_lock);
+        //check if heap already has some gap of requested size
     free_blk_header_t* header = first_fit_search(size);
     if (header) {
         mark_block_allocated(header);
@@ -32,7 +33,6 @@ void* allocate(size_t size) {
         split_block(header, size);
         // free_blk_root->next = header->next;
         // header->next->prev = free_blk_root;
-
 		pthread_mutex_unlock(&global_alloc_lock);
         return (void*)(header+1);
     }
@@ -118,7 +118,7 @@ free_blk_header_t* first_fit_search(size_t size) {
     
     free_blk_header_t *curr = free_blk_root;
     while (curr) {
-        if (get_block_size(curr) >= size && block_is_free(curr)) {  //curr->size >= size && curr->is_free == 1
+        if (get_block_size(curr) >= size && block_is_free(curr)) { 
             return curr;
         }
         curr = curr->next;
@@ -139,15 +139,14 @@ void free(void* ptr) {
         return;
     }
 
-    //if all checks ok, mark free
     header_t* tmp = get_header_of_ptr(ptr);
     mark_block_free(tmp);
-
-    free_blk_header_t* newfree = (free_blk_header_t*)tmp;
-    int coalesced = coalesce_successor(tmp);
-    
     place_footer(tmp);
     set_prev_allocation_status_free(tmp);
+
+    free_blk_header_t* newfree = (free_blk_header_t*)tmp;
+    
+    int coalesced = coalesce_successor(tmp);
     
     if (!coalesced) {
         newfree->size = tmp->size;
@@ -220,16 +219,6 @@ int coalesce_successor(header_t* header) {
     // }     
 }
 
-header_t* search_prev_header(header_t* header) {
-    if (header == heap_head || header == NULL)
-        return NULL;
-    for (header_t* curr = heap_head; curr != NULL; curr = curr->next) {
-        if (curr->next == header)
-            return curr;
-    }
-    return NULL;
-}
-
 
 // ================= HELPER FUNCTIONS =================
 
@@ -262,7 +251,6 @@ void print_header_info(header_t* header) {
 }
 
 inline size_t get_block_size(header_t* header) {
-    // return header->size & ~((1<<1)-1);
     return header->size & ~7;  
 }
 
@@ -296,13 +284,13 @@ inline int prev_block_is_free(header_t* header) {
 }
 
 void place_footer(header_t* header) {
-    char* tmp = (char*)(header) + get_block_size(header) + header_size - footer_size;
+    char* tmp = (char*)(header) + header_size + get_block_size(header) - footer_size;
     footer_t* footer = (footer_t*)tmp;
     footer->header = header;
 }
 
 footer_t* get_footer(header_t* header) {
-    return ((footer_t*)(header + get_block_size(header) + header_size - footer_size));
+    return ((footer_t*)((char*)header + get_block_size(header) + header_size - footer_size));
 }
 
 void print_free_list() {
