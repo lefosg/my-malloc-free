@@ -8,6 +8,7 @@ size_t mmap_hdr_size = sizeof(mmap_header_t);
 
 pthread_mutex_t global_alloc_lock;
 
+// ================= ALLOCATE =================
 
 void* allocate(size_t size) {
     if (size == 0 || size >= __PTRDIFF_MAX__) {
@@ -16,19 +17,18 @@ void* allocate(size_t size) {
     }
     // allocate with mmap if size is  big enough
     //check if heap already has some gap of requested size
-    header_t* header;
     if (size < ALIGN_SIZE)
         size = ALIGN_SIZE;
     else   
         size = ALIGN_SIZE * (int)((size + (ALIGN_SIZE-1)) / ALIGN_SIZE);
-
+    
     if (size >= MMAP_THRESHOLD) {
         void* ptr = allocate_with_mmap(size);  //internally does mutex lock/unlock
         return ptr;
     }
     
 	pthread_mutex_lock(&global_alloc_lock);
-    header = first_fit_search(size);
+    header_t* header = first_fit_search(size);
     if (header) {
         mark_block_allocated(header);
         //check if needed to split the block
@@ -48,11 +48,14 @@ void* allocate_with_mmap(size_t size) {
     void* pointer = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     if (pointer == (void *) -1)
         return NULL;
+
     // if mmap successful, store a mmap_header in the heap
     pthread_mutex_lock(&global_alloc_lock);
-    mmap_header_t* mmap_header = (mmap_header_t*)first_fit_search(mmap_hdr_size-header_size);
+    // effectively, mmap hdr is 16 bytes bigger than the normal header. these extra 16 bytes, could be interpreted as "user data"
+    // that's why first fit searches for mmap_hdr_size-header_size=32-16=16 bytes to allocate. 16 for the header and 16 for the extra two fields
+    mmap_header_t* mmap_header = (mmap_header_t*)first_fit_search(mmap_hdr_size-header_size);  
     if (mmap_header) {  // alocate space if there is enough in heap
-        mmap_header->ptr_size = size;
+        mmap_header->ptr_size = size;  //ptr_size DIFFERENT than size
         mark_block_allocated((header_t*)mmap_header);
         mmap_header->mmap_ptr = pointer;
         //check if needed to split the block
@@ -69,6 +72,35 @@ void* allocate_with_mmap(size_t size) {
         pthread_mutex_unlock(&global_alloc_lock);
         return pointer;
     }
+}
+
+void split_block(header_t* prev, size_t size) {
+    //even when splitting, check if new header+some bytes fit
+    //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
+    long tolerance = get_block_size(prev) * SPLIT_TOL;  //prev->size * SPLIT_TOL
+    if ((long)(get_block_size(prev) - size - header_size) <= tolerance) { //prev->size - ...
+        set_prev_allocation_status_allocated(prev);
+        return;
+    }
+
+    header_t* newblk;
+    char* tmp = (char*)prev;  
+    //now we have a pointer looking at the addr of the prev block
+    //some math: tmp = tmp + header_size(aka skip the hdr) + prev.size (go right after the small block)
+    tmp = tmp + header_size + size;
+    newblk = (header_t*)tmp;
+
+
+    newblk->next = prev->next;
+    // newblk->is_free = 1;
+    newblk->size = get_block_size(prev) - size - header_size; //prev->size
+    mark_block_free(newblk);
+    
+    prev->next=newblk;
+    prev->size=size;
+
+    set_prev_allocation_status_free(newblk);
+    place_footer(newblk);
 }
 
 void* extend_heap(size_t size) {
@@ -101,6 +133,23 @@ void* extend_heap(size_t size) {
     return ptr;
 }
 
+header_t* first_fit_search(size_t size) {
+
+    if (size == 0)  //could skip this check??
+        return NULL;
+    
+    header_t *curr = heap_head;
+    while (curr) {
+        if (get_block_size(curr) >= size && block_is_free(curr)) {  //curr->size >= size && curr->is_free == 1
+            return curr;
+        }
+        curr = curr->next;
+    }
+    return NULL;
+}
+
+// ================= FREE =================
+
 void free(void* ptr) {
     if (!ptr)
         return;
@@ -116,16 +165,10 @@ void free(void* ptr) {
         tmp = get_header_of_ptr(ptr);   
     }
 
-
-    //if all checks ok, mark free
-    print_header_info(tmp);
-    print_mmap_header_info((mmap_header_t*)tmp);
     //if needed, coalesce
     mark_block_free(tmp);
-    coalesce_successor(tmp);
-    // mark_block_free(tmp);
-    place_footer(tmp);
     set_prev_allocation_status_free(tmp);
+    coalesce_successor(tmp);
 	pthread_mutex_unlock(&global_alloc_lock);
 }
 
@@ -146,86 +189,35 @@ mmap_header_t* free_with_munmap(void* ptr) {
 void coalesce_successor(header_t* header) {
     //merge with next block    
     if (header->next && block_is_free(header->next)) { //&& header->next->is_free
-        // header->next->is_free = 0;
-        mark_block_allocated(header->next);
-        int prev_free = prev_block_is_free(header);
-        header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
-        mark_block_free(header);
-        if (prev_free)
-            header->size = header->size | 2;
-            
-        if (header->next == heap_tail) {
-            heap_tail = header;
-            header->next=NULL;
-        } else {
-            header->next = header->next->next;
-        }
+        merge_blocks(header);
     }
-    //check if can coalesce with previous
-    // header_t* prev = search_prev_header(header);
-    // if (prev && block_is_free(prev))  // && prev->is_free
-    //     coalesce_successor(prev);
-    // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce (MUCH faster)
+    place_footer(header);
+    // check if can coalesce with previous
+    // check the 'prev_free' bit in the size var. if free, get prev footer, and coalesce
     if (prev_block_is_free(header)) {
         header_t* prev = (((footer_t*)header)-1)->header;
-        coalesce_successor(prev);
+        merge_blocks(prev);
+        place_footer(prev);
     }    
 }
 
-header_t* search_prev_header(header_t* header) {
-    if (header == heap_head || header == NULL)
-        return NULL;
-    for (header_t* curr = heap_head; curr != NULL; curr = curr->next) {
-        if (curr->next == header)
-            return curr;
+void merge_blocks(header_t* header) {
+    mark_block_allocated(header->next);
+    int prev_free = prev_block_is_free(header);
+    header->size = get_block_size(header) + get_block_size(header->next) + header_size; //header->size + header->next->size
+    mark_block_free(header);
+    if (prev_free)
+        header->size = header->size | 2;
+        
+    if (header->next == heap_tail) {
+        heap_tail = header;
+        header->next=NULL;
+    } else {
+        header->next = header->next->next;
     }
-    return NULL;
 }
 
-void split_block(header_t* prev, size_t size) {
-    //even when splitting, check if new header+some bytes fit
-    //small optimization?: check if 40% of the remaining free space (aka header excluded) will be free
-    long tolerance = get_block_size(prev) * SPLIT_TOL;  //prev->size * SPLIT_TOL
-    if ((long)(get_block_size(prev) - size - header_size) <= tolerance) { //prev->size - ...
-        set_prev_allocation_status_allocated(prev);
-        return;
-    }
-
-    header_t* newblk;
-    char* tmp = (char*)prev;  
-    //now we have a pointer looking at the addr of the prev block
-    //some math: tmp = tmp + header_size(aka skip the hdr) + prev.size (go right after the small block)
-    tmp = tmp + header_size + size;
-    newblk = (header_t*)tmp;
-
-
-    newblk->next = prev->next;
-    // newblk->is_free = 1;
-    newblk->size = get_block_size(prev) - size - header_size; //prev->size
-    mark_block_free(newblk);
-    
-    prev->next=newblk;
-    prev->size=size;
-
-    set_prev_allocation_status_free(newblk);
-    place_footer(newblk);
-}
-
-header_t* first_fit_search(size_t size) {
-
-    if (size == 0)  //could skip this check??
-        return NULL;
-    
-    header_t *curr = heap_head;
-    while (curr) {
-        if (get_block_size(curr) >= size && block_is_free(curr)) {  //curr->size >= size && curr->is_free == 1
-            return curr;
-        }
-        curr = curr->next;
-    }
-    return NULL;
-}
-
+// ================= HELPER FUNCTIONS =================
 
 void print_heap(void) {
     printf("\n====== PRINT HEAP START ======\n");
@@ -257,8 +249,7 @@ void print_header_info(header_t* header) {
 }
 
 inline size_t get_block_size(header_t* header) {
-    // return header->size & ~((1<<1)-1);
-    return header->size & ~15;  
+    return header->size & ~7;  
 }
 
 inline void mark_block_free(header_t* header) {
@@ -291,13 +282,13 @@ inline int prev_block_is_free(header_t* header) {
 }
 
 void place_footer(header_t* header) {
-    char* tmp = (char*)(header) + get_block_size(header) + header_size - footer_size;
+    char* tmp = (char*)(header) + header_size + get_block_size(header) - footer_size;
     footer_t* footer = (footer_t*)tmp;
     footer->header = header;
 }
 
 footer_t* get_footer(header_t* header) {
-    return ((footer_t*)(header + get_block_size(header) + header_size - footer_size));
+    return ((footer_t*)((char*)header + get_block_size(header) + header_size - footer_size));
 }
 
 int header_is_mmaped(mmap_header_t* mmap_h) {

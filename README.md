@@ -1,8 +1,10 @@
 # My malloc/free
 
-## Hybrid mmap/sbrk version
+## Hybrid mmap/sbrk w/ first fit implementation
 
-Same codebase a the main branch aka implicit free list. In this branch we implement a hybrid version which uses `sbrk` and `mmap` functions.
+### Description
+
+Same codebase as the main branch aka implicit free list. In this branch we implement a hybrid version which uses `sbrk` and `mmap` functions.
 
 Function `allocate(size)` is called.
 
@@ -27,18 +29,18 @@ struct mmap_header {
 };
 ```
 
-The pointer that mmap returns, and the size allocated. When allocating with mmap, the `allocate` function will store an `mmap_header` metadata block in the heap with the exact size of 32 bytes (sizeof(struct mmap_header)).
+the pointer that mmap returns (*mmap_ptr*), and the size allocated(*ptr_size*). When allocating with mmap, the `allocate` function will store an `mmap_header` metadata block in the heap with the exact size of 32 bytes (*sizeof(struct mmap_header)*).
 
-Also, due to 8-byte alignment, the 3rd LSB of the `size` field will always be 0. We interpret this 0 as `not mmap'd` bit, while 1 means `mmap'd`. 
+Also, due to 8-byte alignment, the 3rd LSB of the `size` field will always be 0. Conventionally, we name this bit *is_mmap'd*. If it is 0, we interpret it as **not mmap'd** bit, while 1 means **mmap'd**. We do that to distinguish normal headers from mmap_headers.
 
-That way, when wanting to free an mmap'd pointer, we traverse the heap. I
+That way, when wanting to free an mmap'd pointer, we traverse the heap.
 
-- If the bit is 1 and the mmap_ptr field equals the pointer we are requesting to free, then call `munmap`
+- If the *is_mmap'd* bit is 1 and the mmap_ptr field equals the pointer we are requesting to free, then call `munmap`
     - Continue with coalescing etc
-- If the bit is 0, do not `unmap`, free as known
+- If the bit is 0, do not `munmap`, free as known
 
-![alt text](images/beforemmap.png)
-![alt text](images/aftermmap.png)
+![alt text](assets/beforemmap.png)
+![alt text](assets/aftermmap.png)
 
 
 ### Tradeoff

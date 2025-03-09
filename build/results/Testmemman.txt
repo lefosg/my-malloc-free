@@ -1,0 +1,75 @@
+test/Testmemman.c:397:test_prev_block_is_free:PASS
+test/Testmemman.c:398:test_set_prev_allocation_status_free:PASS
+test/Testmemman.c:399:test_mark_block_free:PASS
+test/Testmemman.c:400:test_get_block_size:PASS
+test/Testmemman.c:401:test_block_size_free_blk:PASS
+test/Testmemman.c:402:test_get_header_of_ptr:PASS
+test/Testmemman.c:403:test_mark_block_allocated:PASS
+test/Testmemman.c:404:test_block_is_free:PASS
+test/Testmemman.c:405:test_set_prev_allocation_status_allocated:PASS
+test/Testmemman.c:406:test_place_footer:PASS
+
+====== PRINT MMAP HEADER INFO START ======
+Header: 0x5c1aae8e7af0
+Pointer: 0x79f3d6bdf000
+Size: 16
+Mmap'd pointer: 1
+Pointer size: 20
+Next: (nil)
+====== PRINT MMAP HEADER INFO END ======
+test/Testmemman.c:407:test_header_is_mmaped:PASS
+test/Testmemman.c:408:test_mark_block_mmaped:PASS
+
+====== PRINT MMAP HEADER INFO START ======
+Header: 0x5c1aae8e7e50
+Pointer: 0x79f3d6bbe000
+Size: 16
+Mmap'd pointer: 1
+Pointer size: 20
+Next: (nil)
+====== PRINT MMAP HEADER INFO END ======
+test/Testmemman.c:409:test_mark_block_unmmaped:PASS
+test/Testmemman.c:412:test_allocate_S:PASS
+test/Testmemman.c:413:test_allocate_PTRDIFF_MAX_F:PASS
+
+====== PRINT MMAP HEADER INFO START ======
+Header: 0x5c1aae8e7f60
+Pointer: 0x79f3d6b9d000
+Size: 16
+Mmap'd pointer: 1
+Pointer size: 20
+Next: (nil)
+====== PRINT MMAP HEADER INFO END ======
+
+====== PRINT MMAP HEADER INFO START ======
+Header: 0x5c1aae8e7f80
+Pointer: 0x79f3d6b7c000
+Size: 16
+Mmap'd pointer: 1
+Pointer size: 20
+Next: (nil)
+====== PRINT MMAP HEADER INFO END ======
+test/Testmemman.c:414:test_allocate_mmap:PASS
+test/Testmemman.c:415:test_allocate_size_aligned:PASS
+test/Testmemman.c:416:test_first_fit_S:PASS
+test/Testmemman.c:417:test_first_fit_F:PASS
+test/Testmemman.c:418:test_split:PASS
+test/Testmemman.c:421:test_free:PASS
+test/Testmemman.c:422:test_coalesce_next:PASS
+test/Testmemman.c:423:test_coalesce_previous:PASS
+test/Testmemman.c:424:test_free_middle:PASS
+test/Testmemman.c:425:test_free_all:PASS
+
+====== PRINT MMAP HEADER INFO START ======
+Header: 0x5c1aae8e9858
+Pointer: 0x79f3d6b5b000
+Size: 16
+Mmap'd pointer: 1
+Pointer size: 20
+Next: (nil)
+====== PRINT MMAP HEADER INFO END ======
+test/Testmemman.c:426:test_free_mmaped:PASS
+
+-----------------------
+26 Tests 0 Failures 0 Ignored 
+OK

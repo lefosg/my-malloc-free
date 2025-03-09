@@ -93,20 +93,13 @@ void split_block(header_t* prev, size_t size);
  * @param header pointer to the current header (trying to coalesce with the next)
  * @returns a pointer to the new header. If coalesced, header should be different. If not coalesced,
  * it returns the initial header.
- * 
- * Some thoughts: need to coalesce with prev and next neighbours? Easy to find next. Options for previous:
- * Search from the start -> slow (Currently implemented!)
- * If a previous search has been done, keep pass in the prev pointer as param as well
- * Double link the list
 */
 void coalesce_successor(header_t* header);
 
 /**
- * Returns the previous block header. Serial search from head to given one.
- * @param header current header
- * @returns previous header. If given header is NULL or the heap_head, returns NULL.
+ * Does the actual merging. Is called inside coalesce_successor function
  */
-header_t* search_prev_header(header_t* header);
+void merge_blocks(header_t* header);
 
 /**
  * Takes the pointer in question, and returns a pointer to its correspondent header
