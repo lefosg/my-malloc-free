@@ -87,6 +87,11 @@ void split_block(header_t* prev, size_t size);
 void coalesce_successor(header_t* header);
 
 /**
+ * Does the actual merging. Is called inside coalesce_successor function
+ */
+void merge_blocks(header_t* header);
+
+/**
  * Takes the pointer in question, and returns a pointer to its correspondent header
  * @param ptr to heap
  * @returns header of this ptr
