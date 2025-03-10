@@ -1,6 +1,6 @@
 # My malloc/free
 
-Description:
+## Description - Implicit List w/ Next Fit
 
 Codebase is the exact same as with main branch. Implicit free list. However, in the `allocate` function the search algorithm is not first fit but next fit.
 
