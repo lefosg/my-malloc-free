@@ -1,5 +1,5 @@
 make
 if [ $? -eq 0 ]; then
-  ./build/main
+  ./memman.out
   echo
 fi

@@ -49,6 +49,59 @@ void test_allocate_size_aligned() {
 
 
 
+// ======================= FREE =======================
+
+void test_free() {
+	void* p1 = allocate(100);
+	void* p2 = allocate(200);
+	void* p3 = allocate(300);
+	void* p4 = allocate(400);
+	void* p5 = allocate(500);
+
+	free(p2);
+
+	free_blk_header_t* root = get_root();
+	TEST_ASSERT_NOT_NULL(root->next);
+	TEST_ASSERT_EQUAL(104, get_block_size(root->next));
+	TEST_ASSERT_EQUAL(105, root->next->size);
+	TEST_ASSERT_TRUE(block_is_free(root->next));
+	TEST_ASSERT_NULL(root->next->next);
+
+	//heap reset
+	p2 = allocate(200);
+}
+
+void test_free_edge_case_only_one_blk() {
+	void* p = allocate(100);
+	free(p);
+
+	header_t* hp = get_header_of_ptr(p);
+	free_blk_header_t* root = get_root();
+	TEST_ASSERT_NOT_NULL(root->next);
+	TEST_ASSERT_EQUAL(104, get_block_size(root->next));
+	TEST_ASSERT_EQUAL(105, root->next->size);
+	TEST_ASSERT_TRUE(block_is_free(root->next));
+	TEST_ASSERT_NULL(root->next->next);
+
+	p = allocate(100);
+	TEST_ASSERT_NULL(root->next);
+	TEST_ASSERT_FALSE(block_is_free(hp));
+}
+
+void test_free_multiple() {
+	void* p = allocate(100);
+	void* q = allocate(200);
+	void* r = allocate(300);
+	free(p);
+	free(r);
+
+	free_blk_header_t* root = get_root();
+	TEST_ASSERT_NOT_NULL(root->next);
+	TEST_ASSERT_NOT_NULL(root->next->next);
+	TEST_ASSERT_EQUAL(304, get_block_size(root->next));
+	TEST_ASSERT_TRUE(block_is_free(root->next));
+	TEST_ASSERT_TRUE(block_is_free(root->next->next));
+}
 
 
 int main(void)
@@ -61,10 +114,14 @@ int main(void)
 	
 	// allocate tests
 	RUN_TEST(test_allocate_S);
-	RUN_TEST(test_allocate_size_aligned);
+	RUN_TEST(test_allocate_PTRDIFF_MAX_F);
 	RUN_TEST(test_allocate_size_aligned);
 
 	// free tests
+	RUN_TEST(test_free);
+	// RUN_TEST(test_free_edge_case_only_one_blk);
+	// RUN_TEST(test_free_multiple);
+
 
 
 	return UNITY_END();

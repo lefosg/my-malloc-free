@@ -91,11 +91,6 @@ void split_block(free_blk_header_t* prev, size_t size);
 int coalesce_successor(header_t* header);
 
 /**
- * Does the actual merging. Is called inside coalesce_successor function
- */
-void merge_blocks(header_t* header);
-
-/**
  * Returns the previous block header. Serial search from head to given one.
  * @param header current header
  * @returns previous header. If given header is NULL or the heap_head, returns NULL.
@@ -180,3 +175,9 @@ footer_t* get_footer(header_t* header);
  * Print out the free list headers
  */
 void print_free_list();
+
+/**
+ * Gets the root of the free list
+ * @returns free_blk_root
+ */
+free_blk_header_t* get_root();

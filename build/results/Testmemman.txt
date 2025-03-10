@@ -1,7 +1,1 @@
-test/Testmemman.c:61:test_allocate_S:PASS
-test/Testmemman.c:62:test_allocate_size_aligned:PASS
-test/Testmemman.c:63:test_allocate_size_aligned:PASS
-
------------------------
-3 Tests 0 Failures 0 Ignored 
-OK
+Segmentation fault (core dumped)
