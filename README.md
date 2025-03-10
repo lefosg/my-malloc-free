@@ -1,8 +1,6 @@
 # My malloc/free
 
-## Hybrid mmap/sbrk w/ first fit implementation
-
-### Description
+### Description - Hybrid mmap/sbrk w/ first fit implementation
 
 Same codebase as the main branch aka implicit free list. In this branch we implement a hybrid version which uses `sbrk` and `mmap` functions.
 

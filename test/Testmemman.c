@@ -9,7 +9,7 @@ void tearDown()
 {
 }
 
-// ======================= ALOCATE =======================
+// ======================= ALLOCATE =======================
 
 //allocate returns not NULL
 void test_allocate_S() {
