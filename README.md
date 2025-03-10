@@ -6,6 +6,8 @@
 
 Implementation of my own `allocate` and `free` functions for C. Uses ``sbrk`` function. In this branch, the implementation uses implicit list and first fit algorithm. It is more of a general purpose allocator. 
 
+For more versions of this implementation, check out the other branches as well. Of most interest are the *implicit/hybrid-mmap* and *explicit/first-fit* branches.
+
 
 **API:**
 | Function | Description | Returns |
