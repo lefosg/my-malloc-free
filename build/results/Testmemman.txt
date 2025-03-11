@@ -1,1 +1,8 @@
-Segmentation fault (core dumped)
+test/Testmemman.c:113:test_allocate_S:PASS
+test/Testmemman.c:114:test_allocate_PTRDIFF_MAX_F:PASS
+test/Testmemman.c:115:test_allocate_size_aligned:PASS
+test/Testmemman.c:118:test_free:PASS
+
+-----------------------
+4 Tests 0 Failures 0 Ignored 
+OK
